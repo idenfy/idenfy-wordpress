@@ -1,0 +1,129 @@
+.wrap-wp-idenfy {
+	text-align: center;
+	margin: 50px auto;
+	max-width: 600px;
+}
+.wrap-wp-idenfy .logo {
+	max-width: 300px
+}
+.wrap-wp-idenfy h3 {
+	color: rgb(0, 0, 102);
+	font-size: 2.5em;
+	font-weight: bold;
+}
+.wrap-wp-idenfy p {
+	color: rgb(2, 2, 103);
+	font-size: 1.5em;
+}
+.wrap-wp-idenfy p.link-buttons {
+	margin-top: 60px;
+}
+.wrap-wp-idenfy a.button, .wrap-wp-idenfy a.button:link, .wrap-wp-idenfy a.button:visited, .wrap-wp-idenfy a.button:hover, .wrap-wp-idenfy a.button:focus,
+.wrap-wp-idenfy button.button, .wrap-wp-idenfy button.button:link, .wrap-wp-idenfy button.button:visited, .wrap-wp-idenfy button.button:hover {
+	padding: 15px 20px;
+	text-transform: uppercase;
+	font-size: 0.7em;
+	font-weight: bold;
+	border: 3px solid rgb(68, 93, 235);
+	color: #fff;
+	background-color: rgb(68, 93, 235);
+	margin-right: 50px;
+	border-radius: 10px;
+	outline: none;
+}
+.wrap-wp-idenfy a.button.btn-bg-white, .wrap-wp-idenfy a.button.btn-bg-white:link, .wrap-wp-idenfy a.button.btn-bg-white:visited, .wrap-wp-idenfy a.button.btn-bg-white:hover, .wrap-wp-idenfy a.button.btn-bg-white:focus {
+	border: 3px solid rgb(68, 93, 235);
+	color: rgb(68, 93, 235);
+	background-color: transparent;
+	margin-right: 0;
+	margin-left: 50px;
+	outline: none;
+}
+.wrap-wp-idenfy button.button.btn-activate, .wrap-wp-idenfy button.button.btn-activate:link, .wrap-wp-idenfy button.button.btn-activate:visited, .wrap-wp-idenfy button.button.btn-activate:hover {
+	padding: 10px 20px;
+}
+.wrap-wp-idenfy a.button.btn-go-back, .wrap-wp-idenfy a.button.btn-go-back:link, .wrap-wp-idenfy a.button.btn-go-back:visited, .wrap-wp-idenfy a.button.btn-go-back:hover, .wrap-wp-idenfy a.button.btn-go-back:focus {
+	border: none;
+	color: rgb(0, 0, 102);
+	background-color: transparent;
+	text-transform: none;
+	font-size: 1.1em;
+	padding: 0;
+	outline: none;
+}
+.wrap-wp-idenfy table.api-form, .wrap-wp-idenfy table.shortcode-table {
+	width: 100%;
+	max-width: 80%;
+	margin: 20px auto 40px;
+}
+.wrap-wp-idenfy table.api-form td, .wrap-wp-idenfy table.shortcode-table td {
+	color: rgb(0, 0, 102);
+	background-color: transparent;
+	font-weight: bold;
+	font-size: 1.4em;
+	text-align: left;
+	vertical-align: middle;
+}
+.wrap-wp-idenfy table.shortcode-table tr td {
+	text-align: center;
+}
+.wrap-wp-idenfy table.shortcode-table tr td a, .wrap-wp-idenfy table.shortcode-table tr td a:link, .wrap-wp-idenfy table.shortcode-table tr td a:visited, .wrap-wp-idenfy table.shortcode-table tr td a:hover, .wrap-wp-idenfy table.shortcode-table tr td a:focus {
+	margin-right: 0;
+	margin-left: 0;
+}
+.wrap-wp-idenfy table.shortcode-table tr td.p-top {
+	padding-top: 20px;
+	vertical-align: top;
+}
+.wrap-wp-idenfy table.api-form tr td.p-bottom {
+	padding-bottom: 20px;
+}
+.wrap-wp-idenfy table.api-form td input {
+	width: 100%;
+	border: 3px solid rgb(68, 93, 235);
+	padding: 10px 15px;
+	border-radius: 0;
+}
+.wrap-wp-idenfy .shortcode-def {
+	font-size: 2em;
+	color: rgb(68, 93, 235);
+	font-weight: bold;
+}
+.wrap-wp-idenfy .shortcode-img {
+	width: 100%;
+	max-width: 50px;
+	padding: 0 30px;
+}
+.wrap-wp-idenfy .span-padding {
+	padding: 10px;
+}
+.wrap-wp-idenfy .span-dotted {
+	position: relative;
+	cursor: pointer;
+}
+.wrap-wp-idenfy .span-dotted:after {
+	position: absolute;
+	left: 0;
+	width: 100%;
+	content:"..........................";
+	overflow: hidden;
+	display: block;
+	letter-spacing: 4px;
+}
+.flash {
+	-webkit-animation-name: flash-animation;
+	-webkit-animation-duration: 0.5s;
+
+	animation-name: flash-animation;
+	animation-duration: 0.5s;
+}
+
+@-webkit-keyframes flash-animation {  
+	from { background: rgb(37, 197, 223); }
+	to   { background: default; }
+}
+
+@keyframes flash-animation {  
+	from { background: rgb(37, 197, 223); }
+	to   { background: default; }
+}

@@ -1,0 +1,19 @@
+a.idenfy-button, a.idenfy-button:link, a.idenfy-button:visited, a.idenfy-button:hover, a.idenfy-button:focus {
+	padding: 15px 20px !important;
+	text-transform: uppercase !important;
+	font-weight: bold !important;
+	border: 3px solid rgb(68, 93, 235) !important;
+	color: #fff !important;
+	background-color: rgb(68, 93, 235) !important;
+	border-radius: 10px !important;
+	outline: none !important;
+	box-shadow: none !important;
+	text-shadow: none !important;
+}
+a.idenfy-button .ajax-loader {
+	display: none;
+	margin-left: 7px;
+}
+a.idenfy-button.doing-ajax .ajax-loader {
+	display: inline-block;
+}
