@@ -1,10 +1,9 @@
 <?php
 /*
 Plugin Name: iDenfy
-Description: Enables iDenfy for Wordpress.
+Description: Enables iDenfy identity verification for Wordpress.
 Version:     1.0.5
 Author:      Torricelli
-Author URI:  https://www.fiverr.com/torricelli
 Text Domain: wp-idenfy
 */
 
