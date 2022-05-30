@@ -2,7 +2,7 @@
 /*
 Plugin Name: iDenfy
 Description: Enables iDenfy for Wordpress.
-Version:     1.0.4
+Version:     1.0.5
 Author:      Torricelli
 Author URI:  https://www.fiverr.com/torricelli
 Text Domain: wp-idenfy
@@ -10,7 +10,7 @@ Text Domain: wp-idenfy
 
 defined( 'ABSPATH' ) or die;
 
-define( 'WP_IDENFY_VER', '1.0.4' );
+define( 'WP_IDENFY_VER', '1.0.5' );
 define( 'WP_IDENFY_FILE', __FILE__ );
 define( 'WP_IDENFY_DIR_PATH', plugin_dir_path( __FILE__ ) );
 define( 'WP_IDENFY_NONCE_BN', basename(__FILE__) );
@@ -86,7 +86,7 @@ if ( ! class_exists( 'WP_Idenfy' ) ) {
 
 		public function render_dashboard() {
 			if ( $this->get_option( 'api_key' ) == '' ) {
-				$tab = isset( $_GET['tab'] ) ? $_GET['tab'] : '';
+				$tab = isset( $_GET['tab'] ) ? sanitize_text_field( $_GET['tab'] ) : '';
 				if( $tab == 'activate' ) {
 					require( __DIR__ . '/inc/admin/activate.php' );
 				} elseif( $tab == 'error' ) {
@@ -116,7 +116,6 @@ if ( ! class_exists( 'WP_Idenfy' ) ) {
 
 			if ( $api_key == '' || $api_secret == '' ) wp_die( __( 'Invalid request', 'wp-idenfy' ) );
 
-			//$uuid = 'wordpress-user-' . microtime( true ) * 1000;
 			$uuid = 'wordpress-user-1';
 			$result = $this->api_request( $api_key, $api_secret, $uuid );
 
