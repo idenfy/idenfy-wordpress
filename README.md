@@ -3,7 +3,7 @@
 * Tags: identity-verification, compliance, fraud-prevention, aml, kyc, fraud-detection, know-your-customer, anti-money-laundering
 * Requires at least: 4.4
 * Tested up to: 5.9.3
-* Stable tag: 1.0.4
+* Stable tag: 1.0.5
 * Requires PHP: 5.6
 * License: GPLv3 or later
 
