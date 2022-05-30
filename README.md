@@ -37,6 +37,21 @@ Once your iDenfy API Key and API Secret are added, the shortcode will be availab
 ### 1.0.0 ###
 * Initial release of the plugin.
 
+### 1.0.1 ###
+* Code improvements
+
+### 1.0.2 ###
+* Code improvements
+
+### 1.0.3 ###
+* Code improvements
+
+### 1.0.4 ###
+* Code improvements
+
+### 1.0.5 ###
+* Sanitization added
+
 
 ## Copyright and Trademarks ##
 
