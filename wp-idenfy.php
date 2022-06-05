@@ -3,7 +3,7 @@
 Plugin Name: iDenfy
 Description: Enables iDenfy identity verification for Wordpress.
 Version:     1.0.5
-Author:      Torricelli
+Author:      www.idenfy.com
 Text Domain: wp-idenfy
 */
 
