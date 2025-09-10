@@ -7,13 +7,13 @@
 * Requires PHP: 5.6
 * License: GPLv3 or later
 
-iDenfy is an identity verification service which allows to verify users online
+iDenfy is an identity verification service which allows you to verify users online
 
 ## Description ##
 
 ### Identity verification and fraud prevention solution for Know Your Customer and Anti-Money laundering compliance ###
 
-[iDenfy](https://www.idenfy.com) is an identity verification service which allows to verify users online:
+[iDenfy](https://www.idenfy.com) is an identity verification service which allows you to verify users online:
 * ID Document Verification
 * Facial Recognition
 * 3D Liveness Detection
