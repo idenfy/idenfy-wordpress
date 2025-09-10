@@ -2,14 +2,14 @@
 /*
 Plugin Name: iDenfy
 Description: Enables iDenfy identity verification for Wordpress.
-Version:     1.0.5
+Version:     1.0.7
 Author:      www.idenfy.com
 Text Domain: wp-idenfy
 */
 
 defined( 'ABSPATH' ) or die;
 
-define( 'WP_IDENFY_VER', '1.0.5' );
+define( 'WP_IDENFY_VER', '1.0.7' );
 define( 'WP_IDENFY_FILE', __FILE__ );
 define( 'WP_IDENFY_DIR_PATH', plugin_dir_path( __FILE__ ) );
 define( 'WP_IDENFY_NONCE_BN', basename(__FILE__) );
@@ -28,6 +28,7 @@ if ( ! class_exists( 'WP_Idenfy' ) ) {
 		}
 
 		private $optsgroup_name = 'wp_idenfy_optsgroup';
+        private $options = null;
 		private $options_name = 'wp_idenfy_options';
 		private static $instance = null;
 

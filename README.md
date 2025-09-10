@@ -2,12 +2,12 @@
 * Contributors: iDenfy
 * Tags: identity-verification, compliance, fraud-prevention, aml, kyc, fraud-detection, know-your-customer, anti-money-laundering
 * Requires at least: 4.4
-* Tested up to: 6.0.0
-* Stable tag: 1.0.5
+* Tested up to: 6.8.2
+* Stable tag: 1.0.7
 * Requires PHP: 5.6
 * License: GPLv3 or later
 
-iDenfy is identity verificatin service which allows to verify users online
+iDenfy is identity verification service which allows to verify users online
 
 ## Description ##
 
@@ -52,6 +52,11 @@ Once your iDenfy API Key and API Secret are added, the shortcode will be availab
 ### 1.0.5 ###
 * Sanitization added
 
+### 1.0.6 ###
+* Successful revision completed with Wordpress 6.4.2
+
+### 1.0.7 ###
+* Successful revision completed with Wordpress 6.8.2
 
 ## Copyright and Trademarks ##
 
