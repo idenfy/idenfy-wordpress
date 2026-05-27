@@ -17,3 +17,48 @@ a.idenfy-button .ajax-loader {
 a.idenfy-button.doing-ajax .ajax-loader {
 	display: inline-block;
 }
+
+.idenfy-kyb {
+	width: 100%;
+	max-width: 670px;
+	margin: 0 auto;
+	min-height: 800px;
+}
+.idenfy-kyb-iframe {
+	display: block;
+	width: 100%;
+	height: 800px;
+	border: none;
+}
+.idenfy-kyb-loading,
+.idenfy-kyb-error {
+	text-align: center;
+	padding: 2em 1em;
+}
+.idenfy-kyb-error {
+	color: #b32d2e;
+}
+.idenfy-kyb-close {
+	display: block;
+	margin: 1em auto 0;
+	padding: 10px 24px;
+	background-color: #445deb;
+	color: #fff;
+	border: none;
+	border-radius: 6px;
+	cursor: pointer;
+	font-size: 14px;
+	line-height: 1.2;
+}
+.idenfy-kyb-close:hover {
+	opacity: 0.9;
+}
+@media (max-width: 768px) {
+	.idenfy-kyb {
+		max-width: 100%;
+		min-height: 100vh;
+	}
+	.idenfy-kyb-iframe {
+		height: 100vh;
+	}
+}
