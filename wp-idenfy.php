@@ -2,23 +2,21 @@
 /*
 Plugin Name: iDenfy
 Description: Enables iDenfy identity verification for Wordpress.
-Version:     1.0.7
+Version:     1.1.0
 Author:      www.idenfy.com
 Text Domain: wp-idenfy
 */
 
 defined( 'ABSPATH' ) or die;
 
-define( 'WP_IDENFY_VER', '1.0.7' );
+define( 'WP_IDENFY_VER', '1.1.0' );
 define( 'WP_IDENFY_FILE', __FILE__ );
 define( 'WP_IDENFY_DIR_PATH', plugin_dir_path( __FILE__ ) );
 define( 'WP_IDENFY_NONCE_BN', basename(__FILE__) );
 define( 'WP_IDENFY_NONCE_KEY', 'wp_idenfy_nonce' );
 define( 'WP_IDENFY_REGISTER_URL', 'https://www.idenfy.com/get-started/?source=wordpress' );
 define( 'WP_IDENFY_ENDPOINT_URL', 'https://ivs.idenfy.com/api/v2/token' );
-define( 'WP_IDENFY_REDIRECT_URL', 'https://ivs.idenfy.com/api/v2/redirect?authToken=%token%' );
 define( 'WP_IDENFY_KYB_ENDPOINT_URL', 'https://ivs.idenfy.com/kyb/tokens/' );
-define( 'WP_IDENFY_KYB_UI_URL', 'https://kyb.ui.idenfy.com/welcome?authToken=%token%' );
 
 if ( ! class_exists( 'WP_Idenfy' ) ) {
 	class WP_Idenfy {
@@ -34,13 +32,15 @@ if ( ! class_exists( 'WP_Idenfy' ) ) {
 		private $options_name = 'wp_idenfy_options';
 		private $customization_option_name = 'wp_idenfy_customization';
 		private $customization = null;
-		private $kyb_option_name = 'wp_idenfy_kyb';
-		private $kyb_options = null;
+		private $kyc_option_name = 'wp_idenfy_kyc';
+		private $kyc_settings = null;
 		private static $instance = null;
 
 		private function __clone() { }
 
-		private function __wakeup() { }
+		public function __wakeup() {
+			throw new \Exception( 'Cannot unserialize ' . __CLASS__ );
+		}
 
 		private function __construct() {
 			// WP Hooks
@@ -48,11 +48,12 @@ if ( ! class_exists( 'WP_Idenfy' ) ) {
 			add_action( 'admin_menu', array( $this, 'add_admin_menu' ) );
 			add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_assets' ) );
 			add_action( 'admin_post_wp_idenfy_sapis', array( $this, 'save_api_settings' ) );
+			add_action( 'wp_ajax_wp_idenfy_save_api', array( $this, 'ajax_save_api' ) );
 			add_action( 'admin_post_wp_idenfy_save_customization', array( $this, 'save_customization' ) );
-			add_action( 'admin_post_wp_idenfy_save_kyb', array( $this, 'save_kyb_settings' ) );
+			add_action( 'admin_post_wp_idenfy_save_kyc', array( $this, 'save_kyc' ) );
 			add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_assets' ) );
-			add_action( 'wp_ajax_wp_idenfy_get_link', array( $this, 'ajax_get_link' ) );
-			add_action( 'wp_ajax_nopriv_wp_idenfy_get_link', array( $this, 'ajax_get_link' ) );
+			add_action( 'wp_ajax_wp_idenfy_get_kyc_token', array( $this, 'ajax_get_kyc_token' ) );
+			add_action( 'wp_ajax_nopriv_wp_idenfy_get_kyc_token', array( $this, 'ajax_get_kyc_token' ) );
 			add_action( 'wp_ajax_wp_idenfy_get_kyb_token', array( $this, 'ajax_get_kyb_token' ) );
 			add_action( 'wp_ajax_nopriv_wp_idenfy_get_kyb_token', array( $this, 'ajax_get_kyb_token' ) );
 			add_filter( 'submenu_file', array( $this, 'highlight_submenu' ) );
@@ -67,12 +68,18 @@ if ( ! class_exists( 'WP_Idenfy' ) ) {
 		}
 
 		public function add_admin_menu() {
+			$icon_path = WP_IDENFY_DIR_PATH . 'images/icon.svg';
+			$menu_icon = file_exists( $icon_path )
+				? 'data:image/svg+xml;base64,' . base64_encode( file_get_contents( $icon_path ) )
+				: 'dashicons-id';
+
 			add_menu_page(
 				__( 'iDenfy', 'wp-idenfy' ),
 				__( 'iDenfy', 'wp-idenfy' ),
 				'manage_options',
 				'wp-idenfy',
-				array( $this, 'render_settings' )
+				array( $this, 'render_settings' ),
+				$menu_icon
 			);
 			add_submenu_page(
 				'wp-idenfy',
@@ -129,6 +136,24 @@ if ( ! class_exists( 'WP_Idenfy' ) ) {
 				$this->customization = array_merge( $defaults, $saved );
 			}
 			return $this->customization;
+		}
+
+		public function get_kyc_settings() {
+			if ( is_null( $this->kyc_settings ) ) {
+				$defaults = array(
+					'accept_suspected'    => 0,
+					'accept_unverified'   => 0,
+					'redirect'            => '',
+					'redirect_failed'     => '',
+					'redirect_unverified' => '',
+					'close_button_text'   => '',
+					'hide_on_complete'    => 0,
+					'hide_button_on_complete' => 0,
+				);
+				$saved = (array) get_option( $this->kyc_option_name, array() );
+				$this->kyc_settings = array_merge( $defaults, $saved );
+			}
+			return $this->kyc_settings;
 		}
 
 		public function save_customization() {
@@ -193,6 +218,30 @@ if ( ! class_exists( 'WP_Idenfy' ) ) {
 			$this->customization = null;
 
 			wp_redirect( admin_url( 'admin.php?page=wp-idenfy&tab=customization&saved=1' ) );
+			die;
+		}
+
+		public function save_kyc() {
+			if ( empty( $_POST[ WP_IDENFY_NONCE_KEY ] ) || ! wp_verify_nonce( $_POST[ WP_IDENFY_NONCE_KEY ], WP_IDENFY_NONCE_BN ) ) {
+				wp_die( __( 'Invalid request', 'wp-idenfy' ) );
+			}
+			if ( ! current_user_can( 'manage_options' ) ) {
+				wp_die( __( 'Insufficient permissions', 'wp-idenfy' ) );
+			}
+
+			update_option( $this->kyc_option_name, array(
+				'accept_suspected'    => isset( $_POST['accept_suspected'] ) ? 1 : 0,
+				'accept_unverified'   => isset( $_POST['accept_unverified'] ) ? 1 : 0,
+				'redirect'            => isset( $_POST['redirect'] ) ? esc_url_raw( wp_unslash( $_POST['redirect'] ) ) : '',
+				'redirect_failed'     => isset( $_POST['redirect_failed'] ) ? esc_url_raw( wp_unslash( $_POST['redirect_failed'] ) ) : '',
+				'redirect_unverified' => isset( $_POST['redirect_unverified'] ) ? esc_url_raw( wp_unslash( $_POST['redirect_unverified'] ) ) : '',
+				'close_button_text'   => isset( $_POST['close_button_text'] ) ? sanitize_text_field( wp_unslash( $_POST['close_button_text'] ) ) : '',
+				'hide_on_complete'    => isset( $_POST['hide_on_complete'] ) ? 1 : 0,
+				'hide_button_on_complete' => isset( $_POST['hide_button_on_complete'] ) ? 1 : 0,
+			) );
+			$this->kyc_settings = null;
+
+			wp_redirect( admin_url( 'admin.php?page=wp-idenfy&tab=kyc&saved=kyc' ) );
 			die;
 		}
 
@@ -306,6 +355,15 @@ if ( ! class_exists( 'WP_Idenfy' ) ) {
 
 			wp_localize_script( 'wp-idenfy-admin', 'WPIdenfyAdminData', array(
 				'codeEditor' => $cm_settings,
+				'ajaxUrl'    => admin_url( 'admin-ajax.php' ),
+				'i18n'       => array(
+					'testing' => __( 'Verifying credentials…', 'wp-idenfy' ),
+					'valid'   => __( 'Connected — credentials are valid.', 'wp-idenfy' ),
+					'invalid' => __( 'The API KEY and API SECRET are incorrect.', 'wp-idenfy' ),
+					'error'   => __( 'Could not reach iDenfy. Please try again.', 'wp-idenfy' ),
+					'show'    => __( 'Show secret', 'wp-idenfy' ),
+					'hide'    => __( 'Hide secret', 'wp-idenfy' ),
+				),
 			) );
 		}
 
@@ -319,17 +377,11 @@ if ( ! class_exists( 'WP_Idenfy' ) ) {
 
 			if ( $api_key == '' || $api_secret == '' ) wp_die( __( 'Invalid request', 'wp-idenfy' ) );
 
-			$uuid = 'wordpress-user-1';
-			$result = $this->api_request( $api_key, $api_secret, $uuid );
+			$test = $this->test_credentials( $api_key, $api_secret );
 
-			if ( is_wp_error( $result ) ) wp_die( $result->get_error_message() );
+			if ( $test['status'] === 'error' ) wp_die( esc_html( $test['message'] ) );
 
-			if ( property_exists( $result, 'identifier' ) && $result->identifier == 'UNAUTHORIZED' ) {
-				wp_redirect( admin_url( 'admin.php?page=wp-idenfy&tab=settings&error=invalid_credentials' ) );
-				die;
-			}
-
-			if ( ! property_exists( $result, 'authToken' ) ) {
+			if ( $test['status'] !== 'valid' ) {
 				wp_redirect( admin_url( 'admin.php?page=wp-idenfy&tab=settings&error=invalid_credentials' ) );
 				die;
 			}
@@ -337,19 +389,81 @@ if ( ! class_exists( 'WP_Idenfy' ) ) {
 			update_option( $this->options_name, array(
 				'api_key' => $api_key,
 				'api_secret' => $api_secret,
-				'uuid' => $uuid,
-				'token' => $result->authToken
+				'uuid' => 'wordpress-user-1',
+				'token' => $test['authToken']
 			) );
 
 			wp_redirect( admin_url( 'admin.php?page=wp-idenfy&tab=kyc&saved=1' ) );
 			die;
 		}
 
+		/**
+		 * Test a key/secret pair against the iDenfy token endpoint.
+		 * Returns one of: 'valid' (authToken issued), 'invalid' (rejected creds),
+		 * or 'error' (network/server failure, message in ['message']).
+		 */
+		private function test_credentials( $api_key, $api_secret ) {
+			$result = $this->api_request( $api_key, $api_secret, 'wordpress-user-1' );
+
+			if ( is_wp_error( $result ) ) {
+				return array( 'status' => 'error', 'message' => $result->get_error_message() );
+			}
+
+			if ( property_exists( $result, 'identifier' ) && $result->identifier == 'UNAUTHORIZED' ) {
+				return array( 'status' => 'invalid' );
+			}
+
+			if ( ! property_exists( $result, 'authToken' ) ) {
+				return array( 'status' => 'invalid' );
+			}
+
+			return array( 'status' => 'valid', 'authToken' => $result->authToken );
+		}
+
+		public function ajax_save_api() {
+			if ( empty( $_POST[ WP_IDENFY_NONCE_KEY ] ) || ! wp_verify_nonce( $_POST[ WP_IDENFY_NONCE_KEY ], WP_IDENFY_NONCE_BN ) ) {
+				wp_send_json_error( array( 'status' => 'error', 'message' => __( 'Invalid request.', 'wp-idenfy' ) ) );
+			}
+			if ( ! current_user_can( 'manage_options' ) ) {
+				wp_send_json_error( array( 'status' => 'error', 'message' => __( 'Insufficient permissions.', 'wp-idenfy' ) ) );
+			}
+
+			$api_key    = isset( $_POST['api_key'] ) ? sanitize_text_field( wp_unslash( $_POST['api_key'] ) ) : '';
+			$api_secret = isset( $_POST['api_secret'] ) ? sanitize_text_field( wp_unslash( $_POST['api_secret'] ) ) : '';
+
+			if ( $api_key === '' || $api_secret === '' ) {
+				wp_send_json_error( array( 'status' => 'invalid', 'message' => __( 'Enter both the API KEY and API SECRET.', 'wp-idenfy' ) ) );
+			}
+
+			$test = $this->test_credentials( $api_key, $api_secret );
+
+			if ( $test['status'] === 'error' ) {
+				wp_send_json_error( array( 'status' => 'error', 'message' => $test['message'] ) );
+			}
+
+			if ( $test['status'] !== 'valid' ) {
+				wp_send_json_error( array( 'status' => 'invalid', 'message' => __( 'The API KEY and API SECRET are incorrect.', 'wp-idenfy' ) ) );
+			}
+
+			update_option( $this->options_name, array(
+				'api_key'    => $api_key,
+				'api_secret' => $api_secret,
+				'uuid'       => 'wordpress-user-1',
+				'token'      => $test['authToken'],
+			) );
+			$this->options = null;
+
+			wp_send_json_success( array( 'status' => 'valid', 'message' => __( 'Credentials saved and verified.', 'wp-idenfy' ) ) );
+		}
+
 		public function enqueue_assets() {
+			$style_path = WP_IDENFY_DIR_PATH . 'css/style.css';
+			$js_path    = WP_IDENFY_DIR_PATH . 'js/script.js';
+
 			wp_enqueue_style( 'font-awesome', 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css', null, WP_IDENFY_VER, 'all' );
-			wp_enqueue_style( 'wp-idenfy', plugins_url( 'css/style.css', WP_IDENFY_FILE ), null, WP_IDENFY_VER, 'all' );
+			wp_enqueue_style( 'wp-idenfy', plugins_url( 'css/style.css', WP_IDENFY_FILE ), null, file_exists( $style_path ) ? filemtime( $style_path ) : WP_IDENFY_VER, 'all' );
 			wp_add_inline_style( 'wp-idenfy', $this->build_button_css() );
-			wp_enqueue_script( 'wp-idenfy', plugins_url( 'js/script.js', WP_IDENFY_FILE ), array( 'jquery' ) , WP_IDENFY_VER, true );
+			wp_enqueue_script( 'wp-idenfy', plugins_url( 'js/script.js', WP_IDENFY_FILE ), array( 'jquery' ), file_exists( $js_path ) ? filemtime( $js_path ) : WP_IDENFY_VER, true );
 			wp_localize_script( 'wp-idenfy', 'WPIdenfyData', array(
 				'ajaxUrl' => admin_url( 'admin-ajax.php' ),
 				'i18n' => array(
@@ -377,59 +491,38 @@ if ( ! class_exists( 'WP_Idenfy' ) ) {
 			return $css;
 		}
 
-		public function output_shortcode() {
+		public function output_shortcode( $atts ) {
+			// Result handling is configured globally on the KYC settings tab; only the
+			// form-gating selectors are per-shortcode since they target a specific page.
+			$atts = shortcode_atts( array(
+				'on_complete_enable' => '',
+				'sync_field'         => '',
+			), $atts, 'IDENFY' );
+
+			$s = $this->get_kyc_settings();
 			$c = $this->get_customization();
-			return '<a href="#" class="idenfy-button">' . esc_html( $c['button_text'] ) . '<i class="fa fa-circle-notch fa-spin ajax-loader"></i></a>';
-		}
 
-		public function get_kyb_options() {
-			if ( is_null( $this->kyb_options ) ) {
-				$defaults = array(
-					'flow'                   => '',
-					'theme'                  => '',
-					'lifetime'               => 3600,
-					'locale'                 => '',
-					'questionnaire'          => '',
-					'questionnaire_required' => true,
-				);
-				$saved = (array) get_option( $this->kyb_option_name, array() );
-				$this->kyb_options = array_merge( $defaults, $saved );
-			}
-			return $this->kyb_options;
-		}
+			$data = array(
+				'on_complete_enable'  => $atts['on_complete_enable'],
+				'sync_field'          => $atts['sync_field'],
+				'accept_suspected'    => ! empty( $s['accept_suspected'] ) ? 'true' : '',
+				'accept_unverified'   => ! empty( $s['accept_unverified'] ) ? 'true' : '',
+				'redirect'            => $s['redirect'],
+				'redirect_failed'     => $s['redirect_failed'],
+				'redirect_unverified' => $s['redirect_unverified'],
+				'close_button_text'   => $s['close_button_text'],
+				'hide_on_complete'    => ! empty( $s['hide_on_complete'] ) ? 'true' : '',
+				'hide_button_on_complete' => ! empty( $s['hide_button_on_complete'] ) ? 'true' : '',
+			);
 
-		public function save_kyb_settings() {
-			if ( empty( $_POST[ WP_IDENFY_NONCE_KEY ] ) || ! wp_verify_nonce( $_POST[ WP_IDENFY_NONCE_KEY ], WP_IDENFY_NONCE_BN ) ) {
-				wp_die( __( 'Invalid request', 'wp-idenfy' ) );
-			}
-			if ( ! current_user_can( 'manage_options' ) ) {
-				wp_die( __( 'Insufficient permissions', 'wp-idenfy' ) );
+			$data_attrs = '';
+			foreach ( $data as $k => $v ) {
+				if ( $v !== '' ) {
+					$data_attrs .= ' data-' . esc_attr( str_replace( '_', '-', $k ) ) . '="' . esc_attr( $v ) . '"';
+				}
 			}
 
-			$flow          = isset( $_POST['flow'] ) ? $this->sanitize_kyb_identifier( wp_unslash( $_POST['flow'] ) ) : '';
-			$theme         = isset( $_POST['theme'] ) ? $this->sanitize_kyb_identifier( wp_unslash( $_POST['theme'] ) ) : '';
-			$lifetime      = isset( $_POST['lifetime'] ) ? absint( $_POST['lifetime'] ) : 3600;
-			$lifetime      = max( 60, min( 2592000, $lifetime ) );
-			$locale        = isset( $_POST['locale'] ) ? sanitize_key( wp_unslash( $_POST['locale'] ) ) : '';
-			$allowed_locs  = array( '', 'en', 'es', 'fr', 'ru', 'de', 'it', 'pl', 'lt', 'lv', 'et', 'cs', 'ro', 'hu', 'ja', 'bg', 'nl', 'pt' );
-			if ( ! in_array( $locale, $allowed_locs, true ) ) {
-				$locale = '';
-			}
-			$questionnaire          = isset( $_POST['questionnaire'] ) ? sanitize_text_field( wp_unslash( $_POST['questionnaire'] ) ) : '';
-			$questionnaire_required = ! empty( $_POST['questionnaire_required'] );
-
-			update_option( $this->kyb_option_name, array(
-				'flow'                   => $flow,
-				'theme'                  => $theme,
-				'lifetime'               => $lifetime,
-				'locale'                 => $locale,
-				'questionnaire'          => $questionnaire,
-				'questionnaire_required' => $questionnaire_required,
-			) );
-			$this->kyb_options = null;
-
-			wp_redirect( admin_url( 'admin.php?page=wp-idenfy&tab=kyb&saved=1' ) );
-			die;
+			return '<a href="#" class="idenfy-button"' . $data_attrs . '>' . esc_html( $c['button_text'] ) . '<i class="fa fa-circle-notch fa-spin ajax-loader"></i></a>';
 		}
 
 		private function sanitize_kyb_identifier( $value ) {
@@ -453,7 +546,13 @@ if ( ! class_exists( 'WP_Idenfy' ) ) {
 				'sync_field'             => '',
 				'hide_on_complete'       => '',
 				'close_button_text'      => '',
+				'redirect'               => '',
 			), $atts, 'IDENFY_KYB' );
+
+			// Sanitize the redirect target so it can only be a real URL (blocks javascript: etc.).
+			if ( $atts['redirect'] !== '' ) {
+				$atts['redirect'] = esc_url_raw( $atts['redirect'] );
+			}
 
 			$data_attrs = '';
 			foreach ( $atts as $k => $v ) {
@@ -467,11 +566,14 @@ if ( ! class_exists( 'WP_Idenfy' ) ) {
 				. '</div>';
 		}
 
-		public function ajax_get_link() {
-			$token = $this->get_token();
+		public function ajax_get_kyc_token() {
+			$client_id = isset( $_POST['client_id'] ) ? sanitize_text_field( wp_unslash( $_POST['client_id'] ) ) : '';
+			$client_id = substr( $client_id, 0, 100 );
+
+			$token = $this->get_token( $client_id );
 			if ( ! $token ) wp_send_json_error();
 
-			wp_send_json_success( str_replace( '%token%', $token, WP_IDENFY_REDIRECT_URL ) );
+			wp_send_json_success( array( 'token' => $token ) );
 		}
 
 		private function get_option( $option_name, $default = '' ) {
@@ -501,12 +603,12 @@ if ( ! class_exists( 'WP_Idenfy' ) ) {
 			return $object;
 		}
 
-		private function get_token() {
+		private function get_token( $client_id = '' ) {
 			$api_key = $this->get_option( 'api_key' );
 			$api_secret = $this->get_option( 'api_secret' );
 			if ( $api_key == '' || $api_secret == '' ) return false;
 
-			$uuid = 'wordpress-user-' . microtime( true ) * 1000;
+			$uuid = ( $client_id !== '' ) ? $client_id : 'wordpress-kyc-' . round( microtime( true ) * 1000 );
 			$result = $this->api_request( $api_key, $api_secret, $uuid );
 			if ( is_wp_error( $result ) ) return false;
 
@@ -543,10 +645,9 @@ if ( ! class_exists( 'WP_Idenfy' ) ) {
 				return new WP_Error( 'no_credentials', __( 'iDenfy API credentials are not configured.', 'wp-idenfy' ) );
 			}
 
-			$defaults = $this->get_kyb_options();
 			$lifetime = ! empty( $overrides['lifetime'] )
 				? max( 60, min( 2592000, (int) $overrides['lifetime'] ) )
-				: (int) $defaults['lifetime'];
+				: 3600;
 			$body     = array(
 				'tokenType' => 'FORM',
 				'lifetime'  => $lifetime,
@@ -561,34 +662,28 @@ if ( ! class_exists( 'WP_Idenfy' ) ) {
 				$body['externalRef'] = substr( $overrides['external_ref'], 0, 40 );
 			}
 
-			$flow = ! empty( $overrides['flow'] )
-				? $this->sanitize_kyb_identifier( $overrides['flow'] )
-				: $defaults['flow'];
+			$flow = ! empty( $overrides['flow'] ) ? $this->sanitize_kyb_identifier( $overrides['flow'] ) : '';
 			if ( $flow !== '' ) {
 				$body['flow'] = $flow;
 			}
 
-			$theme = ! empty( $overrides['theme'] )
-				? $this->sanitize_kyb_identifier( $overrides['theme'] )
-				: $defaults['theme'];
+			$theme = ! empty( $overrides['theme'] ) ? $this->sanitize_kyb_identifier( $overrides['theme'] ) : '';
 			if ( $theme !== '' ) {
 				$body['theme'] = $theme;
 			}
 
 			$allowed_locs = array( 'en', 'es', 'fr', 'ru', 'de', 'it', 'pl', 'lt', 'lv', 'et', 'cs', 'ro', 'hu', 'ja', 'bg', 'nl', 'pt' );
-			$locale = ! empty( $overrides['locale'] ) ? $overrides['locale'] : $defaults['locale'];
+			$locale = ! empty( $overrides['locale'] ) ? $overrides['locale'] : '';
 			if ( in_array( $locale, $allowed_locs, true ) ) {
 				$body['locale'] = $locale;
 			}
 
 			// Questionnaire is ignored when a flow is set (the flow controls its own questionnaire).
-			$questionnaire = ! empty( $overrides['questionnaire'] )
-				? $overrides['questionnaire']
-				: $defaults['questionnaire'];
+			$questionnaire = ! empty( $overrides['questionnaire'] ) ? $overrides['questionnaire'] : '';
 			if ( isset( $overrides['questionnaire_required'] ) && $overrides['questionnaire_required'] !== '' ) {
 				$questionnaire_required = ( $overrides['questionnaire_required'] === 'true' || $overrides['questionnaire_required'] === '1' );
 			} else {
-				$questionnaire_required = (bool) $defaults['questionnaire_required'];
+				$questionnaire_required = true;
 			}
 			if ( $flow === '' && $questionnaire !== '' ) {
 				$body['questionnaire']         = $questionnaire;

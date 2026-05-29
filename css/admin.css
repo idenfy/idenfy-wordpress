@@ -1,3 +1,12 @@
+.wp-idenfy-title {
+	margin: 12px 0 8px;
+	padding: 0;
+}
+.wp-idenfy-header-logo {
+	display: block;
+	height: 44px;
+	width: auto;
+}
 .wp-idenfy-container {
 	margin: 20px 0 40px;
 }
@@ -80,6 +89,83 @@
 	border: 1px solid #dcdcde;
 	background: #fff;
 	box-sizing: border-box;
+}
+.wp-idenfy-secret-wrap {
+	position: relative;
+}
+.wp-idenfy-secret-wrap input[type="password"],
+.wp-idenfy-secret-wrap input[type="text"] {
+	width: 100%;
+	padding: 10px 44px 10px 14px;
+	border-radius: 8px;
+	border: 1px solid #dcdcde;
+	background: #fff;
+	box-sizing: border-box;
+}
+.wp-idenfy-secret-wrap input:focus {
+	border-color: #2271b1;
+	box-shadow: 0 0 0 1px #2271b1;
+	outline: none;
+}
+.wp-idenfy-secret-toggle {
+	position: absolute;
+	top: 0;
+	right: 0;
+	height: 100%;
+	width: 40px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: transparent;
+	border: 0;
+	padding: 0;
+	cursor: pointer;
+	color: #646970;
+}
+.wp-idenfy-secret-toggle:hover {
+	color: #1d2327;
+}
+.wp-idenfy-secret-toggle .dashicons {
+	width: 20px;
+	height: 20px;
+	font-size: 20px;
+}
+.wp-idenfy-cred-status {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-bottom: 24px;
+	padding: 10px 14px;
+	border-radius: 8px;
+	font-weight: 600;
+	background: #f6f7f7;
+}
+.wp-idenfy-cred-status .dashicons {
+	width: 20px;
+	height: 20px;
+	font-size: 20px;
+	flex: 0 0 auto;
+}
+.wp-idenfy-cred-status.is-valid {
+	background: #edfaef;
+	color: #46b450;
+}
+.wp-idenfy-cred-status.is-invalid,
+.wp-idenfy-cred-status.is-error,
+.wp-idenfy-cred-status.is-empty {
+	background: #fcf0f1;
+	color: #d63638;
+}
+.wp-idenfy-cred-status.is-testing {
+	background: #f0f6fc;
+	color: #2271b1;
+}
+.wp-idenfy-cred-status.is-testing .dashicons {
+	animation: wp-idenfy-spin 1s linear infinite;
+}
+@keyframes wp-idenfy-spin {
+	from { transform: rotate(0deg); }
+	to   { transform: rotate(360deg); }
 }
 .wp-idenfy-field input[type="color"] {
 	width: 60px;
