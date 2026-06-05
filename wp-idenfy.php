@@ -110,11 +110,14 @@ if ( ! class_exists( 'WP_Idenfy' ) ) {
 		}
 
 		public function highlight_submenu( $submenu_file ) {
-			if ( isset( $_GET['page'] ) && $_GET['page'] === 'wp-idenfy' && isset( $_GET['tab'] ) ) {
-				$tab = sanitize_key( $_GET['tab'] );
-				if ( in_array( $tab, array( 'kyc', 'kyb', 'customization' ), true ) ) {
-					return 'admin.php?page=wp-idenfy&tab=' . $tab;
-				}
+			// Read-only: highlights the matching submenu item from the current admin URL.
+			// This changes no state, so nonce verification is not applicable here.
+			// phpcs:disable WordPress.Security.NonceVerification.Recommended
+			$page = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
+			$tab  = isset( $_GET['tab'] ) ? sanitize_key( wp_unslash( $_GET['tab'] ) ) : '';
+			// phpcs:enable WordPress.Security.NonceVerification.Recommended
+			if ( 'wp-idenfy' === $page && in_array( $tab, array( 'kyc', 'kyb', 'customization' ), true ) ) {
+				return 'admin.php?page=wp-idenfy&tab=' . $tab;
 			}
 			return $submenu_file;
 		}
@@ -186,11 +189,11 @@ if ( ! class_exists( 'WP_Idenfy' ) ) {
 		}
 
 		public function save_customization() {
-			if ( empty( $_POST[ WP_IDENFY_NONCE_KEY ] ) || ! wp_verify_nonce( $_POST[ WP_IDENFY_NONCE_KEY ], WP_IDENFY_NONCE_BN ) ) {
-				wp_die( __( 'Invalid request', 'idenfy' ) );
+			if ( empty( $_POST[ WP_IDENFY_NONCE_KEY ] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST[ WP_IDENFY_NONCE_KEY ] ) ), WP_IDENFY_NONCE_BN ) ) {
+				wp_die( esc_html__( 'Invalid request', 'idenfy' ) );
 			}
 			if ( ! current_user_can( 'manage_options' ) ) {
-				wp_die( __( 'Insufficient permissions', 'idenfy' ) );
+				wp_die( esc_html__( 'Insufficient permissions', 'idenfy' ) );
 			}
 
 			$type     = ( isset( $_POST['type'] ) && $_POST['type'] === 'kyb' ) ? 'kyb' : 'kyc';
@@ -203,9 +206,9 @@ if ( ! class_exists( 'WP_Idenfy' ) ) {
 			$button_text = isset( $_POST['button_text'] ) ? sanitize_text_field( wp_unslash( $_POST['button_text'] ) ) : $conf['button_text'];
 			if ( $button_text === '' ) $button_text = $conf['button_text'];
 
-			$bg_color   = isset( $_POST['bg_color'] ) ? sanitize_hex_color( $_POST['bg_color'] ) : '';
+			$bg_color   = isset( $_POST['bg_color'] ) ? sanitize_hex_color( wp_unslash( $_POST['bg_color'] ) ) : '';
 			$bg_color   = $bg_color ? $bg_color : '#445deb';
-			$text_color = isset( $_POST['text_color'] ) ? sanitize_hex_color( $_POST['text_color'] ) : '';
+			$text_color = isset( $_POST['text_color'] ) ? sanitize_hex_color( wp_unslash( $_POST['text_color'] ) ) : '';
 			$text_color = $text_color ? $text_color : '#ffffff';
 			$radius     = isset( $_POST['border_radius'] ) ? min( 100, absint( $_POST['border_radius'] ) ) : 10;
 			$padding_y  = isset( $_POST['padding_y'] ) ? min( 100, absint( $_POST['padding_y'] ) ) : 15;
@@ -249,11 +252,11 @@ if ( ! class_exists( 'WP_Idenfy' ) ) {
 		}
 
 		public function save_kyc() {
-			if ( empty( $_POST[ WP_IDENFY_NONCE_KEY ] ) || ! wp_verify_nonce( $_POST[ WP_IDENFY_NONCE_KEY ], WP_IDENFY_NONCE_BN ) ) {
-				wp_die( __( 'Invalid request', 'idenfy' ) );
+			if ( empty( $_POST[ WP_IDENFY_NONCE_KEY ] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST[ WP_IDENFY_NONCE_KEY ] ) ), WP_IDENFY_NONCE_BN ) ) {
+				wp_die( esc_html__( 'Invalid request', 'idenfy' ) );
 			}
 			if ( ! current_user_can( 'manage_options' ) ) {
-				wp_die( __( 'Insufficient permissions', 'idenfy' ) );
+				wp_die( esc_html__( 'Insufficient permissions', 'idenfy' ) );
 			}
 
 			update_option( $this->kyc_option_name, array(
@@ -395,11 +398,11 @@ if ( ! class_exists( 'WP_Idenfy' ) ) {
 		}
 
 		public function save_api_settings() {
-			if ( empty( $_POST[ WP_IDENFY_NONCE_KEY ] ) || ! wp_verify_nonce( $_POST[ WP_IDENFY_NONCE_KEY ], WP_IDENFY_NONCE_BN ) ) {
-				wp_die( __( 'Invalid request', 'idenfy' ) );
+			if ( empty( $_POST[ WP_IDENFY_NONCE_KEY ] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST[ WP_IDENFY_NONCE_KEY ] ) ), WP_IDENFY_NONCE_BN ) ) {
+				wp_die( esc_html__( 'Invalid request', 'idenfy' ) );
 			}
 			if ( ! current_user_can( 'manage_options' ) ) {
-				wp_die( __( 'Insufficient permissions', 'idenfy' ) );
+				wp_die( esc_html__( 'Insufficient permissions', 'idenfy' ) );
 			}
 
 			$api_key    = isset( $_POST['api_key'] ) ? sanitize_text_field( wp_unslash( $_POST['api_key'] ) ) : '';
@@ -410,7 +413,7 @@ if ( ! class_exists( 'WP_Idenfy' ) ) {
 				$api_secret = $this->get_option( 'api_secret' );
 			}
 
-			if ( $api_key === '' || $api_secret === '' ) wp_die( __( 'Invalid request', 'idenfy' ) );
+			if ( $api_key === '' || $api_secret === '' ) wp_die( esc_html__( 'Invalid request', 'idenfy' ) );
 
 			$test = $this->test_credentials( $api_key, $api_secret );
 
@@ -452,7 +455,7 @@ if ( ! class_exists( 'WP_Idenfy' ) ) {
 		}
 
 		public function ajax_save_api() {
-			if ( empty( $_POST[ WP_IDENFY_NONCE_KEY ] ) || ! wp_verify_nonce( $_POST[ WP_IDENFY_NONCE_KEY ], WP_IDENFY_NONCE_BN ) ) {
+			if ( empty( $_POST[ WP_IDENFY_NONCE_KEY ] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST[ WP_IDENFY_NONCE_KEY ] ) ), WP_IDENFY_NONCE_BN ) ) {
 				wp_send_json_error( array( 'status' => 'error', 'message' => __( 'Invalid request.', 'idenfy' ) ) );
 			}
 			if ( ! current_user_can( 'manage_options' ) ) {
@@ -501,6 +504,7 @@ if ( ! class_exists( 'WP_Idenfy' ) ) {
 			wp_register_script( 'wp-idenfy', plugins_url( 'js/script.js', WP_IDENFY_FILE ), array( 'jquery' ), file_exists( $js_path ) ? filemtime( $js_path ) : WP_IDENFY_VER, true );
 			wp_localize_script( 'wp-idenfy', 'WPIdenfyData', array(
 				'ajaxUrl' => admin_url( 'admin-ajax.php' ),
+				'nonce'   => wp_create_nonce( WP_IDENFY_NONCE_BN ),
 				'i18n' => array(
 					'error'   => __( 'Error', 'idenfy' ),
 					'NSError' => __( 'Network/Server error', 'idenfy' ),
@@ -620,6 +624,9 @@ if ( ! class_exists( 'WP_Idenfy' ) ) {
 		}
 
 		public function ajax_get_kyc_token() {
+			if ( ! check_ajax_referer( WP_IDENFY_NONCE_BN, 'nonce', false ) ) {
+				wp_send_json_error( array( 'message' => __( 'Your session expired. Please refresh the page and try again.', 'idenfy' ) ) );
+			}
 			$client_id = isset( $_POST['client_id'] ) ? sanitize_text_field( wp_unslash( $_POST['client_id'] ) ) : '';
 			$client_id = substr( $client_id, 0, 100 );
 
@@ -669,6 +676,9 @@ if ( ! class_exists( 'WP_Idenfy' ) ) {
 		}
 
 		public function ajax_get_kyb_token() {
+			if ( ! check_ajax_referer( WP_IDENFY_NONCE_BN, 'nonce', false ) ) {
+				wp_send_json_error( array( 'message' => __( 'Your session expired. Please refresh the page and try again.', 'idenfy' ) ) );
+			}
 			$overrides = array(
 				'client_id'              => isset( $_POST['client_id'] ) ? sanitize_text_field( wp_unslash( $_POST['client_id'] ) ) : '',
 				'external_ref'           => isset( $_POST['external_ref'] ) ? sanitize_text_field( wp_unslash( $_POST['external_ref'] ) ) : '',

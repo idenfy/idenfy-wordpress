@@ -177,6 +177,7 @@
 				dataType: "json",
 				data: {
 					action: "wp_idenfy_get_kyc_token",
+					nonce: WPIdenfyData.nonce,
 					client_id: $btn.attr("data-client-id") || ""
 				}
 			}).done(function(response) {
@@ -199,7 +200,7 @@
 			if ($btn.hasClass("doing-ajax")) return false;
 			$btn.addClass("doing-ajax");
 
-			var payload = { action: "wp_idenfy_get_kyb_token" };
+			var payload = { action: "wp_idenfy_get_kyb_token", nonce: WPIdenfyData.nonce };
 			var keys = ["client_id", "external_ref", "flow", "theme", "locale", "lifetime", "questionnaire", "questionnaire_required", "tags"];
 			$.each(keys, function(_, key) {
 				var val = $btn.attr("data-" + key.replace(/_/g, "-"));

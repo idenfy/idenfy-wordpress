@@ -2,7 +2,7 @@
 Contributors: iDenfy
 Tags: identity-verification, kyc, kyb, aml, fraud-prevention
 Requires at least: 4.9
-Tested up to: 6.8
+Tested up to: 7.0
 Stable tag: 1.1.0
 Requires PHP: 7.1
 License: GPLv3 or later
