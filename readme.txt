@@ -1,10 +1,10 @@
 === iDenfy | Identity verification service ===
 Contributors: iDenfy
 Tags: identity-verification, kyc, kyb, aml, fraud-prevention
-Requires at least: 4.9 or higher
-Tested up to: 7.0
+Requires at least: 4.9
+Tested up to: 6.8
 Stable tag: 1.1.0
-Requires PHP: 7.1 or higher
+Requires PHP: 7.1
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -92,7 +92,8 @@ Add the `[IDENFY_KYB]` shortcode. You can target a specific flow, theme, or ques
 == Upgrade Notice ==
 
 = 1.1.0 =
-Adds KYB business verification via the [IDENFY_KYB] shortcode, plus admin improvements.
+* KYB added
+* Module improvements
 
 == Copyright ==
 

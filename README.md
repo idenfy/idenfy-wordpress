@@ -1,36 +1,37 @@
 # iDenfy | Identity verification service #
 * Contributors: iDenfy
-* Tags: identity-verification, compliance, fraud-prevention, aml, kyc, fraud-detection, know-your-customer, anti-money-laundering
+* Tags: identity-verification, kyc, kyb, aml, fraud-prevention
 * Requires at least: 4.9
-* Tested up to: 6.8.2
+* Tested up to: 6.8
 * Stable tag: 1.1.0
 * Requires PHP: 7.1
 * License: GPLv3 or later
 
-iDenfy is an identity verification service which allows you to verify users online
+Verify people and businesses on your WordPress site with iDenfy — KYC identity checks and KYB business verification for AML compliance.
 
 ## Description ##
 
-### Identity verification and fraud prevention solution for Know Your Customer and Anti-Money laundering compliance ###
+### Identity verification and fraud prevention for Know Your Customer (KYC) and Anti-Money Laundering (AML) compliance ###
 
-iDenfy is an identity verification service which allows you to verify users online:
-* ID Document Verification
-* Facial Recognition
-* 3D Liveness Detection
-* 24/7 Human Supervision
+iDenfy is an identity verification service that lets you onboard and verify users straight from WordPress. Verification runs on iDenfy's platform and includes:
+* ID document verification
+* Facial recognition and 3D liveness detection
+* AML screening for KYC/AML compliance
+* 24/7 human supervision
 
-Please visit our website at the bottom of the page for more information.
+What this plugin adds:
+* **Identity verification (KYC)** — add the `[IDENFY]` shortcode anywhere to show a verification button.
+* **Business verification (KYB)** — embed business verification with the `[IDENFY_KYB]` shortcode, target a flow/theme/questionnaire per page, and gate forms or redirect on completion.
+* **Button customization** — change the verification button text, colors, and styling with a live preview, or add your own CSS.
 
 https://www.youtube.com/watch?v=N9KGl7OvJxg
 
 ## Installation ##
-First, install the plugin on your WordPress site and activate it.
+1. Install and activate the plugin.
+2. Open **iDenfy → Settings** and enter your iDenfy API Key and API Secret. No account yet? Create one at https://www.idenfy.com/get-started/?source=wordpress
+3. Once your credentials are saved and verified, add the `[IDENFY]` (KYC) or `[IDENFY_KYB]` (KYB) shortcode to any page or post.
 
-Then, go to Settings -> iDenfy -> Settings and add your iDenfy API Key and API Secret.
-
-If you haven't created one yet - follow the instructions on the page or create account using this link: https://www.idenfy.com/get-started/?source=wordpress
-
-Once your iDenfy API Key and API Secret are added, the shortcode will be available to copy and add the identity verification initiation button anywhere on your WordPress site.
+Business verification (KYB) requires a KYB flow configured in your iDenfy dashboard and KYB session creation enabled on your account by iDenfy support.
 
 ## Changelog ##
 

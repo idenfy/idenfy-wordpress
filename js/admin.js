@@ -9,6 +9,8 @@ function copyToClipboard(text) {
 
 ;(function($) {
 	$(document).ready(function() {
+		var cmInstances = [];
+
 		$(".shortcode-copy").on("click", function() {
 			var $el = $(this);
 			copyToClipboard($el.text());
@@ -97,30 +99,40 @@ function copyToClipboard(text) {
 				url.searchParams.set("tab", tab);
 				window.history.replaceState({}, "", url.toString());
 			}
-			if (tab === "customization" && typeof cmInstance !== "undefined" && cmInstance && cmInstance.codemirror) {
-				cmInstance.codemirror.refresh();
+			if (tab === "customization") {
+				cmInstances.forEach(function(cm) {
+					if (cm && cm.codemirror) cm.codemirror.refresh();
+				});
 			}
 		});
 
-		var $previewBtn = $("#wp-idenfy-preview-button");
-		if ($previewBtn.length) {
-			$("#wp-idenfy-preview-button").on("click", function(e) { e.preventDefault(); });
+		function initCustomizationForm($form) {
+			var ctype      = $form.data("cust-type") === "kyb" ? "kyb" : "kyc";
+			var prefix     = ctype === "kyb" ? "wp-idenfy-kyb-" : "wp-idenfy-";
+			var btnSel     = ctype === "kyb" ? "a.idenfy-kyb-button" : "a.idenfy-button";
+			var previewId  = ctype === "kyb" ? "wp-idenfy-kyb-preview-button" : "wp-idenfy-preview-button";
+			var defaultTxt = ctype === "kyb" ? "Verify business" : "Verify me";
+			var cssId      = prefix + "advanced-css";
 
-			var $previewStyle = $("<style id='wp-idenfy-preview-styles'></style>").appendTo("head");
+			var $previewBtn = $("#" + previewId);
+			if (!$previewBtn.length) return;
+			$previewBtn.on("click", function(e) { e.preventDefault(); });
+
+			var $previewStyle = $("<style></style>").appendTo("head");
 			var cmInstance = null;
 
 			function getCss() {
-				return cmInstance ? cmInstance.codemirror.getValue() : $("#wp-idenfy-advanced-css").val();
+				return cmInstance ? cmInstance.codemirror.getValue() : $("#" + cssId).val();
 			}
 
 			function updatePreview() {
-				var text     = $("#wp-idenfy-button-text").val() || "Verify me";
-				var bg       = $("#wp-idenfy-bg-color").val();
-				var color    = $("#wp-idenfy-text-color").val();
-				var radius   = $("#wp-idenfy-border-radius").val();
-				var py       = $("#wp-idenfy-padding-y").val();
-				var px       = $("#wp-idenfy-padding-x").val();
-				var fs       = $("#wp-idenfy-font-size").val();
+				var text     = $("#" + prefix + "button-text").val() || defaultTxt;
+				var bg       = $("#" + prefix + "bg-color").val();
+				var color    = $("#" + prefix + "text-color").val();
+				var radius   = $("#" + prefix + "border-radius").val();
+				var py       = $("#" + prefix + "padding-y").val();
+				var px       = $("#" + prefix + "padding-x").val();
+				var fs       = $("#" + prefix + "font-size").val();
 				var advanced = getCss();
 
 				$previewBtn.contents().filter(function() {
@@ -128,8 +140,9 @@ function copyToClipboard(text) {
 				}).remove();
 				$previewBtn.prepend(document.createTextNode(text));
 
+				var sel = btnSel + "#" + previewId;
 				var css = (advanced ? advanced + "\n" : "") +
-					"a.idenfy-button#wp-idenfy-preview-button, a.idenfy-button#wp-idenfy-preview-button:link, a.idenfy-button#wp-idenfy-preview-button:visited, a.idenfy-button#wp-idenfy-preview-button:hover, a.idenfy-button#wp-idenfy-preview-button:focus {" +
+					sel + ", " + sel + ":link, " + sel + ":visited, " + sel + ":hover, " + sel + ":focus {" +
 					"background-color: " + bg + " !important;" +
 					"border-color: " + bg + " !important;" +
 					"color: " + color + " !important;" +
@@ -140,19 +153,49 @@ function copyToClipboard(text) {
 				$previewStyle.text(css);
 			}
 
-			$("#wp-idenfy-customization-form").on("input change", "input", updatePreview);
+			$form.on("input change", "input", updatePreview);
 
 			if (typeof WPIdenfyAdminData !== "undefined" && WPIdenfyAdminData.codeEditor && typeof wp !== "undefined" && wp.codeEditor) {
-				cmInstance = wp.codeEditor.initialize("wp-idenfy-advanced-css", WPIdenfyAdminData.codeEditor);
+				cmInstance = wp.codeEditor.initialize(cssId, WPIdenfyAdminData.codeEditor);
 				cmInstance.codemirror.on("change", function() {
 					cmInstance.codemirror.save();
 					updatePreview();
 				});
+				cmInstances.push(cmInstance);
 			} else {
-				$("#wp-idenfy-advanced-css").on("input change", updatePreview);
+				$("#" + cssId).on("input change", updatePreview);
 			}
 
 			updatePreview();
+		}
+
+		$(".wp-idenfy-customization-form").each(function() {
+			initCustomizationForm($(this));
+		});
+
+		// Switch between the KYC and KYB button designs without scrolling.
+		function activateCustSection(ctype) {
+			$(".wp-idenfy-cust-switch-btn").each(function() {
+				var on = $(this).data("cust-target") === ctype;
+				$(this).toggleClass("is-active", on).attr("aria-selected", on ? "true" : "false");
+			});
+			$(".wp-idenfy-cust-section").each(function() {
+				$(this).toggleClass("is-active", $(this).data("cust-type") === ctype);
+			});
+			// The newly shown editor was hidden, so its layout needs a refresh.
+			cmInstances.forEach(function(cm) {
+				if (cm && cm.codemirror) cm.codemirror.refresh();
+			});
+		}
+
+		$(".wp-idenfy-cust-switch-btn").on("click", function() {
+			activateCustSection($(this).data("cust-target"));
+		});
+
+		// Honor a #wp-idenfy-cust-<type> hash (e.g. after saving) to open that design.
+		var custHash = (window.location.hash || "").replace("#wp-idenfy-cust-", "");
+		if (custHash === "kyc" || custHash === "kyb") {
+			activateCustSection(custHash);
 		}
 	});
 })(jQuery);

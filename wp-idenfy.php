@@ -21,17 +21,17 @@ define( 'WP_IDENFY_KYB_ENDPOINT_URL', 'https://ivs.idenfy.com/kyb/tokens/' );
 if ( ! class_exists( 'WP_Idenfy' ) ) {
 	class WP_Idenfy {
 		public static function get_instance() {
-			if ( self::$instance == null ) {
+			if ( self::$instance === null ) {
 				self::$instance = new self();
 			}
 			return self::$instance;
 		}
 
-		private $optsgroup_name = 'wp_idenfy_optsgroup';
-        private $options = null;
+		private $options = null;
 		private $options_name = 'wp_idenfy_options';
 		private $customization_option_name = 'wp_idenfy_customization';
-		private $customization = null;
+		private $customization_kyb_option_name = 'wp_idenfy_customization_kyb';
+		private $customizations = array();
 		private $kyc_option_name = 'wp_idenfy_kyc';
 		private $kyc_settings = null;
 		private static $instance = null;
@@ -44,7 +44,6 @@ if ( ! class_exists( 'WP_Idenfy' ) ) {
 
 		private function __construct() {
 			// WP Hooks
-			add_action( 'admin_init', array( $this, 'register_settings' ) );
 			add_action( 'admin_menu', array( $this, 'add_admin_menu' ) );
 			add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_assets' ) );
 			add_action( 'admin_post_wp_idenfy_sapis', array( $this, 'save_api_settings' ) );
@@ -61,10 +60,6 @@ if ( ! class_exists( 'WP_Idenfy' ) ) {
 			// Shortcodes
 			add_shortcode( 'IDENFY', array( $this, 'output_shortcode' ) );
 			add_shortcode( 'IDENFY_KYB', array( $this, 'output_kyb_shortcode' ) );
-		}
-
-		public function register_settings() {
-			register_setting( $this->optsgroup_name, $this->options_name );
 		}
 
 		public function add_admin_menu() {
@@ -118,24 +113,52 @@ if ( ! class_exists( 'WP_Idenfy' ) ) {
 			return $submenu_file;
 		}
 
-		public function get_customization() {
-			if ( is_null( $this->customization ) ) {
-				$style_path  = WP_IDENFY_DIR_PATH . 'css/style.css';
-				$default_css = file_exists( $style_path ) ? file_get_contents( $style_path ) : '';
+		private function customization_types() {
+			return array(
+				'kyc' => array(
+					'option'      => $this->customization_option_name,
+					'selector'    => 'a.idenfy-button',
+					'button_text' => __( 'Verify me', 'wp-idenfy' ),
+				),
+				'kyb' => array(
+					'option'      => $this->customization_kyb_option_name,
+					'selector'    => 'a.idenfy-kyb-button',
+					'button_text' => __( 'Verify business', 'wp-idenfy' ),
+				),
+			);
+		}
+
+		public function get_customization( $type = 'kyc' ) {
+			$type  = ( $type === 'kyb' ) ? 'kyb' : 'kyc';
+			if ( ! isset( $this->customizations[ $type ] ) ) {
+				$types       = $this->customization_types();
+				$conf        = $types[ $type ];
 				$defaults = array(
-					'button_text'   => __( 'Verify me', 'wp-idenfy' ),
+					'button_text'   => $conf['button_text'],
 					'bg_color'      => '#445deb',
 					'text_color'    => '#ffffff',
 					'border_radius' => 10,
 					'padding_y'     => 15,
 					'padding_x'     => 20,
 					'font_size'     => 14,
-					'advanced_css'  => $default_css,
+					'advanced_css'  => $this->default_button_css( $conf['selector'] ),
 				);
-				$saved = (array) get_option( $this->customization_option_name, array() );
-				$this->customization = array_merge( $defaults, $saved );
+				$saved = (array) get_option( $conf['option'], array() );
+				$this->customizations[ $type ] = array_merge( $defaults, $saved );
 			}
-			return $this->customization;
+			return $this->customizations[ $type ];
+		}
+
+		private function default_button_css( $selector ) {
+			$style_path = WP_IDENFY_DIR_PATH . 'css/style.css';
+			$css        = file_exists( $style_path ) ? file_get_contents( $style_path ) : '';
+			return $this->extract_css_rule( $css, $selector );
+		}
+
+		private function extract_css_rule( $css, $selector ) {
+			$pattern = '/' . preg_quote( $selector, '/' ) . '[^{]*\{[\s\S]*?\}/i';
+			if ( preg_match( $pattern, (string) $css, $m ) ) return $m[0];
+			return '';
 		}
 
 		public function get_kyc_settings() {
@@ -164,10 +187,15 @@ if ( ! class_exists( 'WP_Idenfy' ) ) {
 				wp_die( __( 'Insufficient permissions', 'wp-idenfy' ) );
 			}
 
-			$saved = $this->get_customization();
+			$type     = ( isset( $_POST['type'] ) && $_POST['type'] === 'kyb' ) ? 'kyb' : 'kyc';
+			$types    = $this->customization_types();
+			$conf     = $types[ $type ];
+			$selector = $conf['selector'];
 
-			$button_text = isset( $_POST['button_text'] ) ? sanitize_text_field( wp_unslash( $_POST['button_text'] ) ) : 'Verify me';
-			if ( $button_text === '' ) $button_text = 'Verify me';
+			$saved = $this->get_customization( $type );
+
+			$button_text = isset( $_POST['button_text'] ) ? sanitize_text_field( wp_unslash( $_POST['button_text'] ) ) : $conf['button_text'];
+			if ( $button_text === '' ) $button_text = $conf['button_text'];
 
 			$bg_color   = isset( $_POST['bg_color'] ) ? sanitize_hex_color( $_POST['bg_color'] ) : '';
 			$bg_color   = $bg_color ? $bg_color : '#445deb';
@@ -179,33 +207,26 @@ if ( ! class_exists( 'WP_Idenfy' ) ) {
 			$font_size  = isset( $_POST['font_size'] ) ? min( 64, max( 8, absint( $_POST['font_size'] ) ) ) : 14;
 			$advanced   = isset( $_POST['advanced_css'] ) ? wp_strip_all_tags( wp_unslash( $_POST['advanced_css'] ) ) : '';
 
-			// Per-property reconciliation: CSS-edit wins; otherwise field-edit writes into CSS.
+			list( $bg_color, $advanced ) = $this->reconcile_color( $saved['advanced_css'], $advanced, $saved['bg_color'], $bg_color, 'background-color', $selector, array( 'border-color' ) );
 
-			// background-color (also keeps border-color in sync with bg)
-			list( $bg_color, $advanced ) = $this->reconcile_color( $saved['advanced_css'], $advanced, $saved['bg_color'], $bg_color, 'background-color', array( 'border-color' ) );
+			list( $text_color, $advanced ) = $this->reconcile_color( $saved['advanced_css'], $advanced, $saved['text_color'], $text_color, 'color', $selector );
 
-			// color
-			list( $text_color, $advanced ) = $this->reconcile_color( $saved['advanced_css'], $advanced, $saved['text_color'], $text_color, 'color' );
+			list( $radius, $advanced ) = $this->reconcile_int( $saved['advanced_css'], $advanced, $saved['border_radius'], $radius, 'border-radius', $selector, 0, 100 );
 
-			// border-radius
-			list( $radius, $advanced ) = $this->reconcile_int( $saved['advanced_css'], $advanced, $saved['border_radius'], $radius, 'border-radius', 0, 100 );
-
-			// padding (one CSS property, two fields)
-			$css_pad_saved  = $this->parse_padding( $this->extract_css_property( $saved['advanced_css'], 'padding' ) );
-			$css_pad_posted = $this->parse_padding( $this->extract_css_property( $advanced, 'padding' ) );
+			$css_pad_saved  = $this->parse_padding( $this->extract_css_property( $saved['advanced_css'], 'padding', $selector ) );
+			$css_pad_posted = $this->parse_padding( $this->extract_css_property( $advanced, 'padding', $selector ) );
 			$css_pad_changed = ( $css_pad_saved !== $css_pad_posted );
 			$field_pad_changed = ( $padding_y !== (int) $saved['padding_y'] || $padding_x !== (int) $saved['padding_x'] );
 			if ( $css_pad_changed && $css_pad_posted !== null ) {
 				$padding_y = min( 100, max( 0, $css_pad_posted[0] ) );
 				$padding_x = min( 200, max( 0, $css_pad_posted[1] ) );
 			} elseif ( $field_pad_changed ) {
-				$advanced = $this->set_css_property( $advanced, 'padding', $padding_y . 'px ' . $padding_x . 'px' );
+				$advanced = $this->set_css_property( $advanced, 'padding', $padding_y . 'px ' . $padding_x . 'px', $selector );
 			}
 
-			// font-size
-			list( $font_size, $advanced ) = $this->reconcile_int( $saved['advanced_css'], $advanced, $saved['font_size'], $font_size, 'font-size', 8, 64 );
+			list( $font_size, $advanced ) = $this->reconcile_int( $saved['advanced_css'], $advanced, $saved['font_size'], $font_size, 'font-size', $selector, 8, 64 );
 
-			update_option( $this->customization_option_name, array(
+			update_option( $conf['option'], array(
 				'button_text'   => $button_text,
 				'bg_color'      => $bg_color,
 				'text_color'    => $text_color,
@@ -215,9 +236,9 @@ if ( ! class_exists( 'WP_Idenfy' ) ) {
 				'font_size'     => $font_size,
 				'advanced_css'  => $advanced,
 			) );
-			$this->customization = null;
+			unset( $this->customizations[ $type ] );
 
-			wp_redirect( admin_url( 'admin.php?page=wp-idenfy&tab=customization&saved=1' ) );
+			wp_redirect( admin_url( 'admin.php?page=wp-idenfy&tab=customization&saved=1#wp-idenfy-cust-' . $type ) );
 			die;
 		}
 
@@ -245,33 +266,33 @@ if ( ! class_exists( 'WP_Idenfy' ) ) {
 			die;
 		}
 
-		private function reconcile_color( $saved_css, $posted_css, $saved_field, $posted_field, $css_prop, $also_sync = array() ) {
-			$css_saved  = $this->normalize_hex_color( $this->extract_css_property( $saved_css, $css_prop ) );
-			$css_posted = $this->normalize_hex_color( $this->extract_css_property( $posted_css, $css_prop ) );
+		private function reconcile_color( $saved_css, $posted_css, $saved_field, $posted_field, $css_prop, $selector, $also_sync = array() ) {
+			$css_saved  = $this->normalize_hex_color( $this->extract_css_property( $saved_css, $css_prop, $selector ) );
+			$css_posted = $this->normalize_hex_color( $this->extract_css_property( $posted_css, $css_prop, $selector ) );
 			$css_changed   = ( $css_saved !== $css_posted );
 			$field_changed = ( $posted_field !== $saved_field );
 
 			if ( $css_changed && $css_posted ) {
 				$posted_field = $css_posted;
 			} elseif ( $field_changed ) {
-				$posted_css = $this->set_css_property( $posted_css, $css_prop, $posted_field );
+				$posted_css = $this->set_css_property( $posted_css, $css_prop, $posted_field, $selector );
 				foreach ( $also_sync as $extra_prop ) {
-					$posted_css = $this->set_css_property( $posted_css, $extra_prop, $posted_field );
+					$posted_css = $this->set_css_property( $posted_css, $extra_prop, $posted_field, $selector );
 				}
 			}
 			return array( $posted_field, $posted_css );
 		}
 
-		private function reconcile_int( $saved_css, $posted_css, $saved_field, $posted_field, $css_prop, $min, $max ) {
-			$css_saved  = $this->parse_px( $this->extract_css_property( $saved_css, $css_prop ) );
-			$css_posted = $this->parse_px( $this->extract_css_property( $posted_css, $css_prop ) );
+		private function reconcile_int( $saved_css, $posted_css, $saved_field, $posted_field, $css_prop, $selector, $min, $max ) {
+			$css_saved  = $this->parse_px( $this->extract_css_property( $saved_css, $css_prop, $selector ) );
+			$css_posted = $this->parse_px( $this->extract_css_property( $posted_css, $css_prop, $selector ) );
 			$css_changed   = ( $css_saved !== $css_posted );
 			$field_changed = ( $posted_field !== (int) $saved_field );
 
 			if ( $css_changed && $css_posted !== null ) {
 				$posted_field = min( $max, max( $min, $css_posted ) );
 			} elseif ( $field_changed ) {
-				$posted_css = $this->set_css_property( $posted_css, $css_prop, $posted_field . 'px' );
+				$posted_css = $this->set_css_property( $posted_css, $css_prop, $posted_field . 'px', $selector );
 			}
 			return array( $posted_field, $posted_css );
 		}
@@ -305,15 +326,15 @@ if ( ! class_exists( 'WP_Idenfy' ) ) {
 			return array( $y, $x !== null ? $x : $y );
 		}
 
-		private function extract_css_property( $css, $prop ) {
-			if ( ! preg_match( '/a\.idenfy-button[^{]*\{([\s\S]*?)\}/i', (string) $css, $rule ) ) return null;
+		private function extract_css_property( $css, $prop, $selector ) {
+			if ( ! preg_match( '/' . preg_quote( $selector, '/' ) . '[^{]*\{([\s\S]*?)\}/i', (string) $css, $rule ) ) return null;
 			$pattern = '/(?:^|;)\s*' . preg_quote( $prop, '/' ) . '\s*:\s*([^;}!]+?)(?:\s*!important)?\s*(?:;|$)/i';
 			if ( preg_match( $pattern, $rule[1], $m ) ) return trim( $m[1] );
 			return null;
 		}
 
-		private function set_css_property( $css, $prop, $new_value ) {
-			if ( ! preg_match( '/(a\.idenfy-button[^{]*\{)([\s\S]*?)(\})/i', $css, $rule, PREG_OFFSET_CAPTURE ) ) {
+		private function set_css_property( $css, $prop, $new_value, $selector ) {
+			if ( ! preg_match( '/(' . preg_quote( $selector, '/' ) . '[^{]*\{)([\s\S]*?)(\})/i', $css, $rule, PREG_OFFSET_CAPTURE ) ) {
 				return $css;
 			}
 			$prefix_start = $rule[1][1];
@@ -368,14 +389,17 @@ if ( ! class_exists( 'WP_Idenfy' ) ) {
 		}
 
 		public function save_api_settings() {
-			if ( empty($_POST[WP_IDENFY_NONCE_KEY]) || ! wp_verify_nonce( $_POST[WP_IDENFY_NONCE_KEY], WP_IDENFY_NONCE_BN ) ) {
+			if ( empty( $_POST[ WP_IDENFY_NONCE_KEY ] ) || ! wp_verify_nonce( $_POST[ WP_IDENFY_NONCE_KEY ], WP_IDENFY_NONCE_BN ) ) {
 				wp_die( __( 'Invalid request', 'wp-idenfy' ) );
 			}
+			if ( ! current_user_can( 'manage_options' ) ) {
+				wp_die( __( 'Insufficient permissions', 'wp-idenfy' ) );
+			}
 
-			$api_key = isset( $_POST['api_key'] ) ? sanitize_text_field( $_POST['api_key'] ) : '';
-			$api_secret = isset( $_POST['api_secret'] ) ? sanitize_text_field( $_POST['api_secret'] ) : '';
+			$api_key    = isset( $_POST['api_key'] ) ? sanitize_text_field( wp_unslash( $_POST['api_key'] ) ) : '';
+			$api_secret = isset( $_POST['api_secret'] ) ? sanitize_text_field( wp_unslash( $_POST['api_secret'] ) ) : '';
 
-			if ( $api_key == '' || $api_secret == '' ) wp_die( __( 'Invalid request', 'wp-idenfy' ) );
+			if ( $api_key === '' || $api_secret === '' ) wp_die( __( 'Invalid request', 'wp-idenfy' ) );
 
 			$test = $this->test_credentials( $api_key, $api_secret );
 
@@ -387,21 +411,17 @@ if ( ! class_exists( 'WP_Idenfy' ) ) {
 			}
 
 			update_option( $this->options_name, array(
-				'api_key' => $api_key,
+				'api_key'    => $api_key,
 				'api_secret' => $api_secret,
-				'uuid' => 'wordpress-user-1',
-				'token' => $test['authToken']
+				'uuid'       => 'wordpress-user-1',
+				'token'      => $test['authToken'],
 			) );
+			$this->options = null;
 
 			wp_redirect( admin_url( 'admin.php?page=wp-idenfy&tab=kyc&saved=1' ) );
 			die;
 		}
 
-		/**
-		 * Test a key/secret pair against the iDenfy token endpoint.
-		 * Returns one of: 'valid' (authToken issued), 'invalid' (rejected creds),
-		 * or 'error' (network/server failure, message in ['message']).
-		 */
 		private function test_credentials( $api_key, $api_secret ) {
 			$result = $this->api_request( $api_key, $api_secret, 'wordpress-user-1' );
 
@@ -409,7 +429,7 @@ if ( ! class_exists( 'WP_Idenfy' ) ) {
 				return array( 'status' => 'error', 'message' => $result->get_error_message() );
 			}
 
-			if ( property_exists( $result, 'identifier' ) && $result->identifier == 'UNAUTHORIZED' ) {
+			if ( property_exists( $result, 'identifier' ) && $result->identifier === 'UNAUTHORIZED' ) {
 				return array( 'status' => 'invalid' );
 			}
 
@@ -475,12 +495,21 @@ if ( ! class_exists( 'WP_Idenfy' ) ) {
 		}
 
 		public function build_button_css() {
-			$c   = $this->get_customization();
+			$css = '';
+			foreach ( $this->customization_types() as $type => $conf ) {
+				$css .= $this->build_button_css_for( $type, $conf['selector'] );
+			}
+			return $css;
+		}
+
+		private function build_button_css_for( $type, $selector ) {
+			$c   = $this->get_customization( $type );
 			$css = '';
 			if ( ! empty( $c['advanced_css'] ) ) {
 				$css .= $c['advanced_css'] . "\n";
 			}
-			$css .= "a.idenfy-button, a.idenfy-button:link, a.idenfy-button:visited, a.idenfy-button:hover, a.idenfy-button:focus {";
+			$full = $selector . ', ' . $selector . ':link, ' . $selector . ':visited, ' . $selector . ':hover, ' . $selector . ':focus';
+			$css .= $full . " {";
 			$css .= "background-color: " . $c['bg_color'] . " !important;";
 			$css .= "border-color: " . $c['bg_color'] . " !important;";
 			$css .= "color: " . $c['text_color'] . " !important;";
@@ -492,8 +521,6 @@ if ( ! class_exists( 'WP_Idenfy' ) ) {
 		}
 
 		public function output_shortcode( $atts ) {
-			// Result handling is configured globally on the KYC settings tab; only the
-			// form-gating selectors are per-shortcode since they target a specific page.
 			$atts = shortcode_atts( array(
 				'on_complete_enable' => '',
 				'sync_field'         => '',
@@ -526,33 +553,36 @@ if ( ! class_exists( 'WP_Idenfy' ) ) {
 		}
 
 		private function sanitize_kyb_identifier( $value ) {
-			// Trust the iDenfy API to validate the actual format; here we just
-			// strip whitespace and dangerous characters so any reasonable ID survives.
 			return substr( trim( sanitize_text_field( (string) $value ) ), 0, 64 );
 		}
 
 		public function output_kyb_shortcode( $atts ) {
 			$atts = shortcode_atts( array(
-				'client_id'              => '',
-				'external_ref'           => '',
-				'flow'                   => '',
-				'theme'                  => '',
-				'locale'                 => '',
-				'lifetime'               => '',
-				'questionnaire'          => '',
-				'questionnaire_required' => '',
-				'tags'                   => '',
-				'on_complete_enable'     => '',
-				'sync_field'             => '',
-				'hide_on_complete'       => '',
-				'close_button_text'      => '',
-				'redirect'               => '',
+				'client_id'               => '',
+				'external_ref'            => '',
+				'flow'                    => '',
+				'theme'                   => '',
+				'locale'                  => '',
+				'lifetime'                => '',
+				'questionnaire'           => '',
+				'questionnaire_required'  => '',
+				'tags'                    => '',
+				'on_complete_enable'      => '',
+				'sync_field'              => '',
+				'hide_on_complete'        => '',
+				'hide_button_on_complete' => '',
+				'close_button_text'       => '',
+				'redirect'                => '',
+				'button_text'             => '',
 			), $atts, 'IDENFY_KYB' );
 
-			// Sanitize the redirect target so it can only be a real URL (blocks javascript: etc.).
 			if ( $atts['redirect'] !== '' ) {
 				$atts['redirect'] = esc_url_raw( $atts['redirect'] );
 			}
+
+			$c           = $this->get_customization( 'kyb' );
+			$button_text = $atts['button_text'] !== '' ? $atts['button_text'] : $c['button_text'];
+			unset( $atts['button_text'] );
 
 			$data_attrs = '';
 			foreach ( $atts as $k => $v ) {
@@ -561,9 +591,7 @@ if ( ! class_exists( 'WP_Idenfy' ) ) {
 				}
 			}
 
-			return '<div class="idenfy-kyb"' . $data_attrs . '>'
-				. '<p class="idenfy-kyb-loading">' . esc_html__( 'Loading business verification…', 'wp-idenfy' ) . '</p>'
-				. '</div>';
+			return '<a href="#" class="idenfy-kyb-button"' . $data_attrs . '>' . esc_html( $button_text ) . '<i class="fa fa-circle-notch fa-spin ajax-loader"></i></a>';
 		}
 
 		public function ajax_get_kyc_token() {
@@ -586,19 +614,16 @@ if ( ! class_exists( 'WP_Idenfy' ) ) {
 			$result = wp_remote_post( WP_IDENFY_ENDPOINT_URL, array(
 				'headers' => array(
 					'Authorization' => 'Basic ' . base64_encode( $api_key . ':' . $api_secret ),
-					'Content-Type' => 'application/json; charset=utf-8'
+					'Content-Type'  => 'application/json; charset=utf-8',
 				),
-				'body' => json_encode( array( 'clientId' => $uuid ) )
+				'body'    => wp_json_encode( array( 'clientId' => $uuid ) ),
 			) );
 
 			if ( is_wp_error( $result ) ) return $result;
 
-			//if ( wp_remote_retrieve_response_code( $result ) != 201 ) return new WP_Error( 'error', __( 'Invalid credentials', 'wp-idenfy' ) );
+			$object = json_decode( wp_remote_retrieve_body( $result ) );
 
-			$object = @json_decode( $result['body'] );
-			
 			if ( ! $object ) return new WP_Error( 'error', __( 'Invalid server response', 'wp-idenfy' ) );
-			//if ( ! property_exists( $object, 'authToken' ) ) return new WP_Error( 'error', __( 'Invalid server response', 'wp-idenfy' ) );
 
 			return $object;
 		}
@@ -606,13 +631,13 @@ if ( ! class_exists( 'WP_Idenfy' ) ) {
 		private function get_token( $client_id = '' ) {
 			$api_key = $this->get_option( 'api_key' );
 			$api_secret = $this->get_option( 'api_secret' );
-			if ( $api_key == '' || $api_secret == '' ) return false;
+			if ( $api_key === '' || $api_secret === '' ) return false;
 
 			$uuid = ( $client_id !== '' ) ? $client_id : 'wordpress-kyc-' . round( microtime( true ) * 1000 );
 			$result = $this->api_request( $api_key, $api_secret, $uuid );
 			if ( is_wp_error( $result ) ) return false;
 
-			if ( property_exists( $result, 'identifier' ) && $result->identifier == 'UNAUTHORIZED' ) return false;
+			if ( property_exists( $result, 'identifier' ) && $result->identifier === 'UNAUTHORIZED' ) return false;
 			if ( ! property_exists( $result, 'authToken' ) ) return false;
 
 			return $result->authToken;
@@ -705,7 +730,7 @@ if ( ! class_exists( 'WP_Idenfy' ) ) {
 					'Content-Type'  => 'application/json; charset=utf-8',
 					'Accept'        => 'application/json',
 				),
-				'body'    => json_encode( $body ),
+				'body'    => wp_json_encode( $body ),
 				'timeout' => 20,
 			) );
 

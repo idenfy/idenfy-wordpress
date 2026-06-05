@@ -14,7 +14,6 @@ $tabs = array(
 
 $has_credentials = $this->get_option( 'api_key' ) !== '' && $this->get_option( 'api_secret' ) !== '';
 $logo_url        = plugins_url( 'images/logo.png', WP_IDENFY_FILE );
-$cust            = $this->get_customization();
 $kyc             = $this->get_kyc_settings();
 ?>
 <div class="wrap">
@@ -212,11 +211,18 @@ $kyc             = $this->get_kyc_settings();
 						<p class="description">
 							<?php _e( 'Use the shortcode attributes on the right to target a specific flow, theme, language, or questionnaire &mdash; e.g. to run different KYB flows on different pages. With no attributes, your iDenfy account defaults apply.', 'wp-idenfy' ); ?>
 						</p>
+						<p class="description">
+							<?php printf(
+								/* translators: %s: link to the Customization tab */
+								__( 'The shortcode renders a button. Change its text and appearance in the %s tab.', 'wp-idenfy' ),
+								'<a href="' . esc_url( admin_url( 'admin.php?page=wp-idenfy&tab=customization' ) ) . '">' . esc_html__( 'Customization', 'wp-idenfy' ) . '</a>'
+							); ?>
+						</p>
 					</div>
 				</div>
 				<div class="wp-idenfy-card-docs">
 					<h3><?php _e( 'How it works', 'wp-idenfy' ); ?></h3>
-					<p class="description"><?php _e( 'Drop the shortcode on any page. When a visitor opens it, the plugin starts a business verification with iDenfy and shows it in an embedded window. When the visitor finishes, the plugin can react &mdash; unlock a button, mark a form field, or run your own code.', 'wp-idenfy' ); ?></p>
+					<p class="description"><?php _e( 'Drop the shortcode on any page. It shows a button; when a visitor clicks it, the plugin starts a business verification with iDenfy and opens it in a modal window over your page. When the visitor finishes, the plugin can react &mdash; unlock a button, mark a form field, or run your own code.', 'wp-idenfy' ); ?></p>
 					<h3><?php _e( 'Shortcode attributes', 'wp-idenfy' ); ?></h3>
 						<p class="description"><?php _e( 'Every attribute is optional &mdash; a bare <code>[IDENFY_KYB]</code> uses your iDenfy account defaults.', 'wp-idenfy' ); ?></p>
 
@@ -233,8 +239,10 @@ $kyc             = $this->get_kyc_settings();
 					<ul class="wp-idenfy-attr-list">
 						<li><code>on_complete_enable</code> &mdash; <?php _e( 'CSS selector of an element to enable when verification finishes (e.g. a "Next" button). For a link or any non-form element, add the <code>idenfy-disabled</code> class to it &mdash; it will be greyed out and unclickable until verification finishes.', 'wp-idenfy' ); ?></li>
 						<li><code>sync_field</code> &mdash; <?php _e( 'CSS selector of a hidden input to set to <code>"completed"</code> when verification finishes &mdash; useful for form-plugin server-side validation.', 'wp-idenfy' ); ?></li>
-						<li><code>hide_on_complete="true"</code> &mdash; <?php _e( 'Auto-hide the iframe after the user finishes. Off by default (a Close button is shown instead).', 'wp-idenfy' ); ?></li>
+						<li><code>hide_on_complete="true"</code> &mdash; <?php _e( 'Auto-close the modal after the user finishes. Off by default (a Close button is shown instead).', 'wp-idenfy' ); ?></li>
+						<li><code>hide_button_on_complete="true"</code> &mdash; <?php _e( 'Hide the button after a successful verification so the visitor can\'t start another. Has no effect if a success redirect is set.', 'wp-idenfy' ); ?></li>
 						<li><code>close_button_text</code> &mdash; <?php _e( 'Custom label for the Close button. Defaults to "Close".', 'wp-idenfy' ); ?></li>
+						<li><code>button_text</code> &mdash; <?php _e( 'Override the button label for this shortcode only. Defaults to the label set in the Customization tab.', 'wp-idenfy' ); ?></li>
 							<li><code>redirect</code> &mdash; <?php _e( 'URL to send the visitor to after a successful verification, e.g. <code>redirect="/thank-you"</code>. Relative paths and full URLs both work.', 'wp-idenfy' ); ?></li>
 					</ul>
 
@@ -272,8 +280,8 @@ $kyc             = $this->get_kyc_settings();
 						<p><code>[IDENFY_KYB redirect="/thank-you"]</code></p>
 
 					<h3><?php _e( 'Run your own code when it finishes', 'wp-idenfy' ); ?></h3>
-					<p class="description"><?php _e( 'Need more than the attributes above? Listen for the <code>idenfy:kyb:complete</code> event on the container &mdash; it fires on both success and failure:', 'wp-idenfy' ); ?></p>
-					<pre class="wp-idenfy-code"><code>document.querySelector('.idenfy-kyb').addEventListener('idenfy:kyb:complete', function(e) {
+					<p class="description"><?php _e( 'Need more than the attributes above? Listen for the <code>idenfy:kyb:complete</code> event on the button &mdash; it fires on both success and failure:', 'wp-idenfy' ); ?></p>
+					<pre class="wp-idenfy-code"><code>document.querySelector('a.idenfy-kyb-button').addEventListener('idenfy:kyb:complete', function(e) {
     if (e.detail.status === 'success') {
         // your code here — analytics, a custom message, etc.
     } else if (e.detail.status === 'failed') {
@@ -287,63 +295,101 @@ $kyc             = $this->get_kyc_settings();
 		</div>
 
 		<div class="tab-panel <?php echo $active_tab === 'customization' ? 'is-active' : ''; ?>" data-tab="customization">
-			<div class="wp-idenfy-card-grid">
-				<div class="wp-idenfy-card-form">
-					<div class="wp-idenfy-form-box">
-						<h2><?php _e( 'Button Customization', 'wp-idenfy' ); ?></h2>
-						<p class="description"><?php _e( 'Change how the verification button looks. Preview updates as you type.', 'wp-idenfy' ); ?></p>
-						<form action="<?php echo esc_url( admin_url( 'admin-post.php?action=wp_idenfy_save_customization' ) ); ?>" method="POST" id="wp-idenfy-customization-form">
-							<?php wp_nonce_field( WP_IDENFY_NONCE_BN, WP_IDENFY_NONCE_KEY ); ?>
-							<div class="wp-idenfy-field">
-								<label for="wp-idenfy-button-text"><?php _e( 'Button text', 'wp-idenfy' ); ?></label>
-								<input type="text" id="wp-idenfy-button-text" name="button_text" value="<?php echo esc_attr( $cust['button_text'] ); ?>" required>
-							</div>
-							<div class="wp-idenfy-field-row">
+			<p class="description wp-idenfy-cust-intro"><?php _e( 'Customize the KYC and KYB verification buttons independently. Each preview updates as you type.', 'wp-idenfy' ); ?></p>
+			<?php
+			$cust_sections = array(
+				'kyc' => array(
+					'heading'   => __( 'KYC button', 'wp-idenfy' ),
+					'shortcode' => '[IDENFY]',
+					'btn_class' => 'idenfy-button',
+					'preview'   => 'wp-idenfy-preview-button',
+					'prefix'    => 'wp-idenfy-',
+					'data'      => $this->get_customization( 'kyc' ),
+				),
+				'kyb' => array(
+					'heading'   => __( 'KYB button', 'wp-idenfy' ),
+					'shortcode' => '[IDENFY_KYB]',
+					'btn_class' => 'idenfy-kyb-button',
+					'preview'   => 'wp-idenfy-kyb-preview-button',
+					'prefix'    => 'wp-idenfy-kyb-',
+					'data'      => $this->get_customization( 'kyb' ),
+				),
+			);
+			?>
+			<div class="wp-idenfy-cust-switch" role="tablist">
+				<?php $first = true; foreach ( $cust_sections as $ctype => $sec ) : ?>
+					<button type="button" role="tab" class="wp-idenfy-cust-switch-btn <?php echo $first ? 'is-active' : ''; ?>" data-cust-target="<?php echo esc_attr( $ctype ); ?>" aria-selected="<?php echo $first ? 'true' : 'false'; ?>"><?php echo esc_html( $sec['heading'] ); ?></button>
+				<?php $first = false; endforeach; ?>
+			</div>
+			<?php
+			$first = true;
+			foreach ( $cust_sections as $ctype => $sec ) :
+				$cd = $sec['data'];
+				$p  = $sec['prefix'];
+			?>
+			<div class="wp-idenfy-cust-section <?php echo $first ? 'is-active' : ''; ?>" id="wp-idenfy-cust-<?php echo esc_attr( $ctype ); ?>" data-cust-type="<?php echo esc_attr( $ctype ); ?>">
+				<h2 class="wp-idenfy-cust-title">
+					<?php echo esc_html( $sec['heading'] ); ?>
+					<code class="shortcode-copy" title="<?php esc_attr_e( 'Click to copy', 'wp-idenfy' ); ?>"><?php echo esc_html( $sec['shortcode'] ); ?></code>
+				</h2>
+				<div class="wp-idenfy-card-grid">
+					<div class="wp-idenfy-card-form">
+						<div class="wp-idenfy-form-box">
+							<form action="<?php echo esc_url( admin_url( 'admin-post.php?action=wp_idenfy_save_customization' ) ); ?>" method="POST" class="wp-idenfy-customization-form" data-cust-type="<?php echo esc_attr( $ctype ); ?>">
+								<?php wp_nonce_field( WP_IDENFY_NONCE_BN, WP_IDENFY_NONCE_KEY ); ?>
+								<input type="hidden" name="type" value="<?php echo esc_attr( $ctype ); ?>">
 								<div class="wp-idenfy-field">
-									<label for="wp-idenfy-bg-color"><?php _e( 'Background color', 'wp-idenfy' ); ?></label>
-									<input type="color" id="wp-idenfy-bg-color" name="bg_color" value="<?php echo esc_attr( $cust['bg_color'] ); ?>">
+									<label for="<?php echo esc_attr( $p ); ?>button-text"><?php _e( 'Button text', 'wp-idenfy' ); ?></label>
+									<input type="text" id="<?php echo esc_attr( $p ); ?>button-text" name="button_text" value="<?php echo esc_attr( $cd['button_text'] ); ?>" required>
 								</div>
-								<div class="wp-idenfy-field">
-									<label for="wp-idenfy-text-color"><?php _e( 'Text color', 'wp-idenfy' ); ?></label>
-									<input type="color" id="wp-idenfy-text-color" name="text_color" value="<?php echo esc_attr( $cust['text_color'] ); ?>">
+								<div class="wp-idenfy-field-row">
+									<div class="wp-idenfy-field">
+										<label for="<?php echo esc_attr( $p ); ?>bg-color"><?php _e( 'Background color', 'wp-idenfy' ); ?></label>
+										<input type="color" id="<?php echo esc_attr( $p ); ?>bg-color" name="bg_color" value="<?php echo esc_attr( $cd['bg_color'] ); ?>">
+									</div>
+									<div class="wp-idenfy-field">
+										<label for="<?php echo esc_attr( $p ); ?>text-color"><?php _e( 'Text color', 'wp-idenfy' ); ?></label>
+										<input type="color" id="<?php echo esc_attr( $p ); ?>text-color" name="text_color" value="<?php echo esc_attr( $cd['text_color'] ); ?>">
+									</div>
 								</div>
-							</div>
-							<div class="wp-idenfy-field-row">
-								<div class="wp-idenfy-field">
-									<label for="wp-idenfy-border-radius"><?php _e( 'Border radius (px)', 'wp-idenfy' ); ?></label>
-									<input type="number" id="wp-idenfy-border-radius" name="border_radius" value="<?php echo esc_attr( $cust['border_radius'] ); ?>" min="0" max="100">
+								<div class="wp-idenfy-field-row">
+									<div class="wp-idenfy-field">
+										<label for="<?php echo esc_attr( $p ); ?>border-radius"><?php _e( 'Border radius (px)', 'wp-idenfy' ); ?></label>
+										<input type="number" id="<?php echo esc_attr( $p ); ?>border-radius" name="border_radius" value="<?php echo esc_attr( $cd['border_radius'] ); ?>" min="0" max="100">
+									</div>
+									<div class="wp-idenfy-field">
+										<label for="<?php echo esc_attr( $p ); ?>font-size"><?php _e( 'Font size (px)', 'wp-idenfy' ); ?></label>
+										<input type="number" id="<?php echo esc_attr( $p ); ?>font-size" name="font_size" value="<?php echo esc_attr( $cd['font_size'] ); ?>" min="8" max="64">
+									</div>
 								</div>
-								<div class="wp-idenfy-field">
-									<label for="wp-idenfy-font-size"><?php _e( 'Font size (px)', 'wp-idenfy' ); ?></label>
-									<input type="number" id="wp-idenfy-font-size" name="font_size" value="<?php echo esc_attr( $cust['font_size'] ); ?>" min="8" max="64">
+								<div class="wp-idenfy-field-row">
+									<div class="wp-idenfy-field">
+										<label for="<?php echo esc_attr( $p ); ?>padding-y"><?php _e( 'Padding vertical (px)', 'wp-idenfy' ); ?></label>
+										<input type="number" id="<?php echo esc_attr( $p ); ?>padding-y" name="padding_y" value="<?php echo esc_attr( $cd['padding_y'] ); ?>" min="0" max="100">
+									</div>
+									<div class="wp-idenfy-field">
+										<label for="<?php echo esc_attr( $p ); ?>padding-x"><?php _e( 'Padding horizontal (px)', 'wp-idenfy' ); ?></label>
+										<input type="number" id="<?php echo esc_attr( $p ); ?>padding-x" name="padding_x" value="<?php echo esc_attr( $cd['padding_x'] ); ?>" min="0" max="200">
+									</div>
 								</div>
-							</div>
-							<div class="wp-idenfy-field-row">
-								<div class="wp-idenfy-field">
-									<label for="wp-idenfy-padding-y"><?php _e( 'Padding vertical (px)', 'wp-idenfy' ); ?></label>
-									<input type="number" id="wp-idenfy-padding-y" name="padding_y" value="<?php echo esc_attr( $cust['padding_y'] ); ?>" min="0" max="100">
+								<div class="wp-idenfy-field wp-idenfy-field-code">
+									<label for="<?php echo esc_attr( $p ); ?>advanced-css"><?php _e( 'Advanced CSS', 'wp-idenfy' ); ?></label>
+									<textarea id="<?php echo esc_attr( $p ); ?>advanced-css" name="advanced_css" rows="14"><?php echo esc_textarea( $cd['advanced_css'] ); ?></textarea>
+									<p class="description"><?php _e( 'The current button stylesheet. On save, the fields above and this CSS are reconciled: edits made here are pulled into the fields, and edits made in the fields are written back into this CSS.', 'wp-idenfy' ); ?></p>
 								</div>
-								<div class="wp-idenfy-field">
-									<label for="wp-idenfy-padding-x"><?php _e( 'Padding horizontal (px)', 'wp-idenfy' ); ?></label>
-									<input type="number" id="wp-idenfy-padding-x" name="padding_x" value="<?php echo esc_attr( $cust['padding_x'] ); ?>" min="0" max="200">
-								</div>
-							</div>
-							<div class="wp-idenfy-field wp-idenfy-field-code">
-								<label for="wp-idenfy-advanced-css"><?php _e( 'Advanced CSS', 'wp-idenfy' ); ?></label>
-								<textarea id="wp-idenfy-advanced-css" name="advanced_css" rows="14"><?php echo esc_textarea( $cust['advanced_css'] ); ?></textarea>
-								<p class="description"><?php _e( 'The current button stylesheet. On save, the fields above and this CSS are reconciled: edits made here are pulled into the fields, and edits made in the fields are written back into this CSS.', 'wp-idenfy' ); ?></p>
-							</div>
-							<p class="submit">
-								<button type="submit" class="button button-primary"><?php _e( 'Save Changes', 'wp-idenfy' ); ?></button>
-							</p>
-						</form>
+								<p class="submit">
+									<button type="submit" class="button button-primary"><?php _e( 'Save Changes', 'wp-idenfy' ); ?></button>
+								</p>
+							</form>
+						</div>
+					</div>
+					<div class="wp-idenfy-card-image wp-idenfy-preview-area">
+						<h3 class="wp-idenfy-preview-heading"><?php _e( 'Preview', 'wp-idenfy' ); ?></h3>
+						<a href="#" id="<?php echo esc_attr( $sec['preview'] ); ?>" class="<?php echo esc_attr( $sec['btn_class'] ); ?>"><?php echo esc_html( $cd['button_text'] ); ?><i class="fa fa-circle-notch fa-spin ajax-loader"></i></a>
 					</div>
 				</div>
-				<div class="wp-idenfy-card-image wp-idenfy-preview-area">
-					<h3 class="wp-idenfy-preview-heading"><?php _e( 'Preview', 'wp-idenfy' ); ?></h3>
-					<a href="#" id="wp-idenfy-preview-button" class="idenfy-button"><?php echo esc_html( $cust['button_text'] ); ?><i class="fa fa-circle-notch fa-spin ajax-loader"></i></a>
-				</div>
 			</div>
+			<?php $first = false; endforeach; ?>
 		</div>
 	</div>
 </div>
