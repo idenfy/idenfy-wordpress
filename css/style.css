@@ -26,10 +26,21 @@ a.idenfy-button .ajax-loader,
 a.idenfy-kyb-button .ajax-loader {
 	display: none;
 	margin-left: 7px;
+	width: 1em;
+	height: 1em;
+	box-sizing: border-box;
+	border: 2px solid currentColor;
+	border-top-color: transparent;
+	border-radius: 50%;
+	vertical-align: -0.125em;
+	animation: idenfy-spin 0.6s linear infinite;
 }
 a.idenfy-button.doing-ajax .ajax-loader,
 a.idenfy-kyb-button.doing-ajax .ajax-loader {
 	display: inline-block;
+}
+@keyframes idenfy-spin {
+	to { transform: rotate(360deg); }
 }
 
 /* Lock any element (link, button, etc.) until verification passes. Add this

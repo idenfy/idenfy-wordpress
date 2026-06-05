@@ -35,33 +35,33 @@ Business verification (KYB) requires a KYB flow configured in your iDenfy dashbo
 
 ## Changelog ##
 
-### 1.0.0 ###
-* Initial release of the plugin.
+### 1.1.0 ###
+* KYB added
+* Module improvements
 
-### 1.0.1 ###
-* Code improvements
+### 1.0.7 ###
+* Successful revision completed with WordPress 6.8.2
 
-### 1.0.2 ###
+### 1.0.6 ###
+* Successful revision completed with WordPress 6.4.2
+
+### 1.0.5 ###
+* Sanitization added
+
+### 1.0.4 ###
 * Code improvements
 
 ### 1.0.3 ###
 * Code improvements
 
-### 1.0.4 ###
+### 1.0.2 ###
 * Code improvements
 
-### 1.0.5 ###
-* Sanitization added
+### 1.0.1 ###
+* Code improvements
 
-### 1.0.6 ###
-* Successful revision completed with Wordpress 6.4.2
-
-### 1.0.7 ###
-* Successful revision completed with Wordpress 6.8.2
-
-### 1.1.0 ###
-* KYB added
-* Module improvements
+### 1.0.0 ###
+* Initial release of the plugin.
 
 ## Copyright and Trademarks ##
 
