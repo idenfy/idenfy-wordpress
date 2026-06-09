@@ -1,65 +1,100 @@
-# iDenfy | Identity verification service #
-* Contributors: iDenfy
-* Tags: identity-verification, compliance, fraud-prevention, aml, kyc, fraud-detection, know-your-customer, anti-money-laundering
-* Requires at least: 4.4
-* Tested up to: 6.8.2
-* Stable tag: 1.0.7
-* Requires PHP: 5.6
-* License: GPLv3 or later
+=== iDenfy | Identity verification service ===
+Contributors: iDenfy
+Tags: identity-verification, kyc, kyb, aml, fraud-prevention
+Requires at least: 4.9
+Tested up to: 7.0
+Stable tag: 1.1.0
+Requires PHP: 7.1
+License: GPLv3 or later
+License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
-iDenfy is an identity verification service which allows you to verify users online
+Verify people and businesses on your WordPress site with iDenfy — KYC identity checks and KYB business verification for AML compliance.
 
-## Description ##
+== Description ==
 
-### Identity verification and fraud prevention solution for Know Your Customer and Anti-Money laundering compliance ###
+[iDenfy](https://www.idenfy.com) is an identity verification service that lets you onboard and verify your users straight from WordPress. Add a verification button or embed a full business-verification flow with a shortcode — no coding required.
 
-[iDenfy](https://www.idenfy.com) is an identity verification service which allows you to verify users online:
-* ID Document Verification
-* Facial Recognition
-* 3D Liveness Detection
-* 24/7 Human Supervision
+Verification runs on iDenfy's platform and includes:
 
-Please visit our website at the bottom of the page for more information.
+* ID document verification
+* Facial recognition and 3D liveness detection
+* AML screening for KYC/AML compliance
+* 24/7 human supervision
+
+= What this plugin does =
+
+* **Identity verification (KYC)** — add the `[IDENFY]` shortcode anywhere to show a verification button. Visitors complete identity verification in a hosted iDenfy flow.
+* **Business verification (KYB)** — embed business verification with the `[IDENFY_KYB]` shortcode. Pick the flow, theme, and questionnaire per page, tag sessions with your own order or reference IDs, gate a form until verification finishes, or redirect the visitor on success.
+* **Button customization** — change the verification button text, colors, and styling with a live preview, or add your own CSS.
 
 https://www.youtube.com/watch?v=N9KGl7OvJxg
 
-## Installation ##
-First, install the plugin on your WordPress site and activate it.
+== Installation ==
 
-Then, go to Settings -> iDenfy -> Settings and add your iDenfy API Key and API Secret.
+1. Install and activate the plugin.
+2. Open **iDenfy → Settings** and enter your iDenfy API Key and API Secret. No account yet? [Create one here](https://www.idenfy.com/get-started/?source=wordpress).
+3. Once your credentials are saved and verified, copy the `[IDENFY]` shortcode (KYC) or `[IDENFY_KYB]` shortcode (KYB) and add it to any page or post.
 
-If you haven't created one yet - follow the instructions on the page or create account using this link: https://www.idenfy.com/get-started/?source=wordpress
+Business verification (KYB) requires a KYB flow configured in your iDenfy dashboard and KYB session creation enabled on your account by iDenfy support.
 
-Once your iDenfy API Key and API Secret are added, the shortcode will be available to copy and add the identity verification initiation button anywhere on your WordPress site.
+== Frequently Asked Questions ==
 
-## Changelog ##
+= Do I need an iDenfy account? =
 
-### 1.0.0 ###
-* Initial release of the plugin.
+Yes. You need an iDenfy account with an API Key and Secret. You can create one at https://www.idenfy.com/get-started/?source=wordpress.
 
-### 1.0.1 ###
-* Code improvements
+= How do I add identity (KYC) verification? =
 
-### 1.0.2 ###
-* Code improvements
+Add the `[IDENFY]` shortcode to any page or post. It renders a button that starts the verification flow.
 
-### 1.0.3 ###
-* Code improvements
+= How do I add business (KYB) verification? =
 
-### 1.0.4 ###
-* Code improvements
+Add the `[IDENFY_KYB]` shortcode. You can target a specific flow, theme, or questionnaire and react when verification finishes. The KYB tab in the plugin settings lists every attribute with examples.
 
-### 1.0.5 ###
+== Screenshots ==
+
+1. Identity (KYC) verification completed successfully.
+2. Customization tab — change the verification button's text, colors, and styling with a live preview.
+3. KYC identity verification running in an embedded window on a WordPress page.
+4. KYB business verification embedded on a page, with a "Next" button locked until verification finishes.
+5. After KYB verification finishes, the "Next" button unlocks so the visitor can continue.
+
+== Changelog ==
+
+= 1.1.0 =
+* KYB added
+* Module improvements
+
+= 1.0.7 =
+* Successful revision completed with WordPress 6.8.2
+
+= 1.0.6 =
+* Successful revision completed with WordPress 6.4.2
+
+= 1.0.5 =
 * Sanitization added
 
-### 1.0.6 ###
-* Successful revision completed with Wordpress 6.4.2
+= 1.0.4 =
+* Code improvements
 
-### 1.0.7 ###
-* Successful revision completed with Wordpress 6.8.2
+= 1.0.3 =
+* Code improvements
 
-## Copyright and Trademarks ##
+= 1.0.2 =
+* Code improvements
 
-iDenfy is a registered trademark of UAB "Identifikaciniai Projektai" / UAB "iDenfy"
+= 1.0.1 =
+* Code improvements
 
-[iDenfy](https://www.idenfy.com)
+= 1.0.0 =
+* Initial release of the plugin.
+
+== Upgrade Notice ==
+
+= 1.1.0 =
+* KYB added
+* Module improvements
+
+== Copyright ==
+
+iDenfy is a registered trademark of UAB "Identifikaciniai Projektai" / UAB "iDenfy".
